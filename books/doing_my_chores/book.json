@@ -1,0 +1,244 @@
+{
+  "title": "Doing my Chores",
+  "pages": [
+    {
+      "page_number": 0,
+      "content": "Hello! Look at the beautiful cover of our book. It's titled Doing my Chores. This story is all about a bright little girl who loves to play in her colorful bedroom. She wears a green dress and has wonderful orange pigtails!\nHO, ho, ho, hoo",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_000.png",
+        "filename": "page_000.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page000.wav",
+        "filename": "page000.wav",
+        "content_type": "audio/wav",
+        "provider": "macos_say",
+        "language": "en",
+        "model": "macOS say",
+        "voice": "Samantha"
+      }
+    },
+    {
+      "page_number": 1,
+      "content": "Our cheerful friend is standing in her lovely room. She smiles brightly at us because she says, 'I like doing my chores.' Isn't that sweet?",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_001.png",
+        "filename": "page_001.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page001.wav",
+        "filename": "page001.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 2,
+      "content": "But wait! As we look around her beautiful pink room, she seems to think a little more. Does it mean all of them? She thinks and whispers, 'Well, maybe not all of them, but most of them.'",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_002.png",
+        "filename": "page_002.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page002.wav",
+        "filename": "page002.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 3,
+      "content": "She looks at the scattered toys and socks on the floor in her messy room. Oh dear! She murmurs again, looking thoughtful: 'Hmm, maybe not most of them. But a lot of them.'",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_003.png",
+        "filename": "page_003.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page003.wav",
+        "filename": "page003.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 4,
+      "content": "As she looks closer at everything that needs attention, her voice gets quieter. She adjusts her words and says, 'Okay, maybe not a lot of them. But a few of them.'",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_004.png",
+        "filename": "page_004.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page004.wav",
+        "filename": "page004.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 5,
+      "content": "She is surrounded by toys and papers! What did she just say? Her eyes get big as if she realizes something funny. She says, 'Well, maybe not a few of them but... None of them!' Wow!",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_005.png",
+        "filename": "page_005.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page005.wav",
+        "filename": "page005.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 6,
+      "content": "Then she smiles the biggest smile! It was all just pretend play! She giggles and tells us, 'Just fooling... I really do like doing my chores.' Being playful is fun!",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_006.png",
+        "filename": "page_006.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page006.wav",
+        "filename": "page006.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 7,
+      "content": "The story takes us to the kitchen. Here, she helps her Mommy and Daddy wash dishes! She knows that helping her family means they can all have a wonderful day.",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_007.png",
+        "filename": "page_007.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page007.wav",
+        "filename": "page007.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 9,
+      "content": "Sometimes, when she is bored, she starts doing chores even if they are not assigned to her. Like washing extra dishes, just because she feels curious!",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_009.png",
+        "filename": "page_009.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page009.wav",
+        "filename": "page009.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 10,
+      "content": "What happens if a chore is boring? No worries! She gets super creative and makes up silly games! Making chores into games makes the job much easier.",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_010.png",
+        "filename": "page_010.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page010.wav",
+        "filename": "page010.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 11,
+      "content": "Another fun time was putting away laundry. She pretended she was hiding it from her Mommy! It sounds like every chore can be an imaginative game.",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_011.png",
+        "filename": "page_011.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page011.wav",
+        "filename": "page011.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 12,
+      "content": "And guess what happens after all the chores are finally done? It is reward time! They go to the park and slide down a blue slide until they are tired!",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_012.png",
+        "filename": "page_012.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page012.wav",
+        "filename": "page012.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 13,
+      "content": "One day, she wonders, 'Will we ever get done?' But then she remembers something important. She knows that if her chores weren't finished, they wouldn't be able to go out and play in the park.",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_013.png",
+        "filename": "page_013.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page013.wav",
+        "filename": "page013.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    },
+    {
+      "page_number": 14,
+      "content": "So the story ends with a wonderful message: Being responsible can be so important, but remember to have some fun while you do it! Do your chores until they are done!",
+      "image": {
+        "path": "./books/doing_my_chores/images/page_014.png",
+        "filename": "page_014.png",
+        "content_type": "image/png"
+      },
+      "audio": {
+        "path": "./books/doing_my_chores/voices/page014.wav",
+        "filename": "page014.wav",
+        "content_type": "audio/wav",
+        "provider": "coqui_xtts_v2",
+        "language": "en",
+        "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+      }
+    }
+  ]
+}

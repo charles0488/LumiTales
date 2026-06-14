@@ -1,0 +1,245 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f7f3;
+  --ink: #1f2933;
+  --muted: #637083;
+  --panel: #ffffff;
+  --line: #d9e1d6;
+  --primary: #1f7a6a;
+  --primary-strong: #165f53;
+  --accent: #d45067;
+  --shadow: 0 18px 45px rgba(31, 41, 51, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(244, 247, 243, 0.94), rgba(246, 240, 229, 0.86)),
+    #f4f7f3;
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+.reader-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.is-editing .reader-shell {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+}
+
+.stage,
+.editor {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.stage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  min-width: 0;
+  padding: 22px;
+  border-radius: 8px;
+}
+
+.book-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.book-title,
+.page-count {
+  margin: 0;
+}
+
+.book-title {
+  color: var(--primary-strong);
+  font-size: clamp(1.4rem, 2.4vw, 2.2rem);
+  font-weight: 800;
+}
+
+.page-count {
+  color: var(--muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.image-frame {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fdfbf6;
+}
+
+#pageImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: calc(100vh - 190px);
+  object-fit: contain;
+}
+
+.transport {
+  display: grid;
+  grid-template-columns: 48px minmax(96px, 160px) 48px minmax(76px, 96px) auto;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--primary);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--primary-strong);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+#prevButton,
+#nextButton {
+  width: 48px;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.auto-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.auto-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.editor {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.editor[hidden] {
+  display: none;
+}
+
+.editor-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.editor h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+#saveStatus {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+#pageContent {
+  width: 100%;
+  min-height: 280px;
+  resize: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  color: var(--ink);
+  background: #fffdf8;
+  line-height: 1.6;
+}
+
+#pageContent:focus {
+  outline: 3px solid rgba(31, 122, 106, 0.22);
+  border-color: var(--primary);
+}
+
+#saveButton {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .is-editing .reader-shell,
+  .reader-shell {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .stage {
+    min-height: 70vh;
+  }
+
+  .transport {
+    grid-template-columns: 44px minmax(90px, 1fr) 44px minmax(72px, 96px) auto;
+  }
+
+  #pageImage {
+    max-height: 58vh;
+  }
+}
+
+@media (max-width: 520px) {
+  .book-meta,
+  .editor-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .transport {
+    grid-template-columns: 44px 1fr 44px;
+  }
+
+  #editButton {
+    grid-column: 1 / 3;
+  }
+
+  .auto-toggle {
+    grid-column: 3 / 4;
+    justify-content: center;
+  }
+}

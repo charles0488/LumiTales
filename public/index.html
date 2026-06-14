@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LivBookReader</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="reader-shell">
+      <section class="stage" aria-label="Book page">
+        <div class="book-meta">
+          <p id="bookTitle" class="book-title">Loading...</p>
+          <p id="pageCount" class="page-count"></p>
+        </div>
+
+        <div class="image-frame">
+          <img id="pageImage" alt="">
+        </div>
+
+        <div class="transport" aria-label="Reading controls">
+          <button id="prevButton" type="button" aria-label="Previous page">‹</button>
+          <button id="playButton" type="button">Play</button>
+          <button id="nextButton" type="button" aria-label="Next page">›</button>
+          <button id="editButton" type="button" aria-expanded="false" aria-controls="pageEditor">Edit</button>
+          <label class="auto-toggle">
+            <input id="autoAdvance" type="checkbox" checked>
+            Auto
+          </label>
+        </div>
+
+        <audio id="audioPlayer" preload="auto"></audio>
+      </section>
+
+      <aside id="pageEditor" class="editor" aria-label="Page editor" hidden>
+        <div class="editor-heading">
+          <h1>Page Text</h1>
+          <p id="saveStatus" role="status"></p>
+        </div>
+        <textarea id="pageContent" spellcheck="true"></textarea>
+        <button id="saveButton" type="button">Save Page</button>
+      </aside>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
