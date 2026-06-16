@@ -1,10 +1,16 @@
 const elements = {
+  shelfPanel: document.querySelector("#bookshelfPanel"),
+  shelfToggle: document.querySelector("#bookshelfToggle"),
+  shelfClose: document.querySelector("#bookshelfClose"),
+  shelfScrim: document.querySelector("#bookshelfScrim"),
   shelf: document.querySelector("#bookShelf"),
   shelfCount: document.querySelector("#bookShelfCount"),
   title: document.querySelector("#bookTitle"),
   pageCount: document.querySelector("#pageCount"),
+  imageFrame: document.querySelector(".image-frame"),
   image: document.querySelector("#pageImage"),
   audio: document.querySelector("#audioPlayer"),
+  playbackPane: document.querySelector(".playback-pane"),
   previous: document.querySelector("#prevButton"),
   play: document.querySelector("#playButton"),
   next: document.querySelector("#nextButton"),
@@ -24,6 +30,8 @@ let isReading = false;
 let isEditing = false;
 let dirty = false;
 let statusTimer;
+let isShelfOpen = false;
+let isPlaybackPaneVisible = true;
 
 function assetPath(asset) {
   const rawPath = asset?.path?.replace(/^\.\//, "") || "";
@@ -57,6 +65,24 @@ function setStatus(message) {
   }
 }
 
+function setShelfOpen(nextIsOpen) {
+  isShelfOpen = nextIsOpen;
+  document.body.classList.toggle("is-shelf-open", isShelfOpen);
+  elements.shelfToggle.setAttribute("aria-expanded", String(isShelfOpen));
+  elements.shelfPanel.setAttribute("aria-hidden", String(!isShelfOpen));
+  elements.shelfScrim.hidden = !isShelfOpen;
+
+  if (isShelfOpen) {
+    elements.shelfPanel.focus();
+  }
+}
+
+function setPlaybackPaneVisible(nextIsVisible) {
+  isPlaybackPaneVisible = nextIsVisible;
+  document.body.classList.toggle("is-playback-pane-hidden", !isPlaybackPaneVisible);
+  elements.playbackPane.setAttribute("aria-hidden", String(!isPlaybackPaneVisible));
+}
+
 function updateNavigation() {
   const hasBook = Boolean(book);
   elements.previous.disabled = !hasBook || currentIndex === 0;
@@ -68,8 +94,10 @@ function updateNavigation() {
     return;
   }
 
-  elements.play.textContent = isReading ? "Pause" : "Play";
-  elements.edit.textContent = isEditing ? "Close" : "Edit";
+  elements.play.textContent = isReading ? "⏸" : "▶";
+  elements.play.setAttribute("aria-label", isReading ? "Pause" : "Play");
+  elements.edit.textContent = "✎";
+  elements.edit.setAttribute("aria-label", isEditing ? "Close" : "Edit");
   elements.edit.setAttribute("aria-expanded", String(isEditing));
 }
 
@@ -133,6 +161,7 @@ function renderShelf() {
         if (shelfBook.id !== bookId) {
           selectBook(shelfBook.id);
         }
+        setShelfOpen(false);
       });
 
       return button;
@@ -160,8 +189,10 @@ async function playCurrentAudio() {
   try {
     elements.audio.currentTime = 0;
     await elements.audio.play();
+    setPlaybackPaneVisible(false);
   } catch {
     isReading = false;
+    setPlaybackPaneVisible(true);
     updateNavigation();
     setStatus("Press Play to start audio");
   }
@@ -170,6 +201,7 @@ async function playCurrentAudio() {
 function pauseAudio() {
   isReading = false;
   elements.audio.pause();
+  setPlaybackPaneVisible(true);
   updateNavigation();
 }
 
@@ -286,8 +318,17 @@ elements.audio.addEventListener("ended", () => {
     goNext({ playAudio: true });
   } else {
     isReading = false;
+    setPlaybackPaneVisible(true);
     updateNavigation();
   }
+});
+
+elements.imageFrame.addEventListener("click", (event) => {
+  if (!isReading || event.target.closest(".playback-pane")) {
+    return;
+  }
+
+  setPlaybackPaneVisible(true);
 });
 
 elements.content.addEventListener("input", () => {
@@ -296,10 +337,27 @@ elements.content.addEventListener("input", () => {
 });
 
 elements.save.addEventListener("click", saveCurrentPage);
+elements.shelfToggle.addEventListener("click", () => {
+  setShelfOpen(!isShelfOpen);
+});
+
+elements.shelfClose.addEventListener("click", () => {
+  setShelfOpen(false);
+});
+
+elements.shelfScrim.addEventListener("click", () => {
+  setShelfOpen(false);
+});
 
 document.addEventListener("keydown", (event) => {
   const isEditingText = document.activeElement === elements.content;
   if (isEditingText) {
+    return;
+  }
+
+  if (event.key === "Escape" && isShelfOpen) {
+    setShelfOpen(false);
+    elements.shelfToggle.focus();
     return;
   }
 
@@ -318,6 +376,10 @@ document.addEventListener("keydown", (event) => {
 });
 
 async function init() {
+  elements.shelfPanel.setAttribute("tabindex", "-1");
+  setShelfOpen(false);
+  setPlaybackPaneVisible(true);
+
   try {
     const response = await fetch("/api/books");
     if (!response.ok) {

@@ -7,34 +7,43 @@
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <div id="bookshelfScrim" class="bookshelf-scrim" hidden></div>
     <main class="reader-shell">
-      <aside class="bookshelf" aria-label="Bookshelf">
+      <aside id="bookshelfPanel" class="bookshelf" aria-label="Bookshelf">
         <div class="bookshelf-heading">
           <h1>Bookshelf</h1>
           <p id="bookShelfCount"></p>
+          <button id="bookshelfClose" class="bookshelf-close" type="button" aria-label="Close bookshelf">×</button>
         </div>
         <div id="bookShelf" class="book-grid" aria-live="polite"></div>
       </aside>
 
       <section class="stage" aria-label="Book page">
-        <div class="book-meta">
-          <p id="bookTitle" class="book-title">Loading...</p>
-          <p id="pageCount" class="page-count"></p>
-        </div>
-
         <div class="image-frame">
-          <img id="pageImage" alt="">
-        </div>
+          <button id="bookshelfToggle" class="bookshelf-toggle" type="button" aria-expanded="false" aria-controls="bookshelfPanel">Books</button>
+          <div class="book-meta" tabindex="0" aria-label="Book information">
+            <span class="book-meta-label">ⓘ</span>
+            <div class="book-meta-details">
+              <p id="bookTitle" class="book-title">Loading...</p>
+              <p id="pageCount" class="page-count"></p>
+            </div>
+          </div>
 
-        <div class="transport" aria-label="Reading controls">
-          <button id="prevButton" type="button" aria-label="Previous page">‹</button>
-          <button id="playButton" type="button">Play</button>
-          <button id="nextButton" type="button" aria-label="Next page">›</button>
-          <button id="editButton" type="button" aria-expanded="false" aria-controls="pageEditor">Edit</button>
-          <label class="auto-toggle">
-            <input id="autoAdvance" type="checkbox" checked>
-            Auto
-          </label>
+          <img id="pageImage" alt="">
+
+          <div class="playback-pane" aria-label="Page playback controls">
+            <button id="prevButton" type="button" aria-label="Previous page">‹</button>
+            <button id="playButton" type="button" aria-label="Play">▶</button>
+            <button id="nextButton" type="button" aria-label="Next page">›</button>
+            <label class="auto-toggle">
+              <input id="autoAdvance" type="checkbox" checked>
+              Auto
+            </label>
+          </div>
+
+          <div class="reader-tools" aria-label="Reading options">
+            <button id="editButton" type="button" aria-label="Edit" aria-expanded="false" aria-controls="pageEditor">✎</button>
+          </div>
         </div>
 
         <audio id="audioPlayer" preload="auto"></audio>

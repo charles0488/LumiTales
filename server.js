@@ -11,6 +11,8 @@ const publicDir = path.join(__dirname, "public");
 const booksDir = path.join(__dirname, "books");
 const port = Number(process.env.PORT || 3000);
 const execFileAsync = promisify(execFile);
+const defaultTtsModel = "tts_models/multilingual/multi-dataset/xtts_v2";
+const defaultTtsLanguage = "en";
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -162,29 +164,123 @@ function audioFilePath(bookId, page) {
   return resolved;
 }
 
-async function synthesizeVoice(bookId, text, page) {
+async function resolveLocalPath(bookId, configuredPath) {
+  if (!configuredPath) {
+    return null;
+  }
+
+  if (path.isAbsolute(configuredPath)) {
+    return configuredPath;
+  }
+
+  const normalizedPath = configuredPath.replace(/^\.\//, "");
+  const candidates = [
+    path.resolve(booksDir, bookId, normalizedPath),
+    path.resolve(__dirname, normalizedPath)
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await stat(candidate);
+      return candidate;
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    }
+  }
+
+  return candidates[0];
+}
+
+function ttsSettings(book) {
+  const bookTts = book.tts || {};
+  return {
+    provider: process.env.TTS_PROVIDER || bookTts.provider || "macos_say",
+    speakerWav: process.env.TTS_SPEAKER_WAV || bookTts.speaker_wav || "",
+    language: process.env.TTS_LANGUAGE || bookTts.language || defaultTtsLanguage,
+    model: process.env.TTS_MODEL || bookTts.model || defaultTtsModel,
+    command: process.env.TTS_COMMAND || bookTts.command || "tts",
+    macosVoice: process.env.MACOS_TTS_VOICE || bookTts.macos_voice || "Samantha"
+  };
+}
+
+async function synthesizeWithMacosSay(text, tmpAiff, tmpWav, targetPath, page, settings) {
+  await execFileAsync("/usr/bin/say", ["-v", settings.macosVoice, "-o", tmpAiff, text], {
+    timeout: 120_000,
+    maxBuffer: 1024 * 1024
+  });
+  await execFileAsync("/usr/bin/afconvert", ["-f", "WAVE", "-d", "LEI16@24000", tmpAiff, tmpWav], {
+    timeout: 120_000,
+    maxBuffer: 1024 * 1024
+  });
+  await rename(tmpWav, targetPath);
+
+  page.audio.provider = "macos_say";
+  page.audio.voice = settings.macosVoice;
+  page.audio.model = "macOS say";
+  page.audio.content_type = "audio/wav";
+}
+
+async function synthesizeWithCoquiXtts(bookId, text, tmpRawWav, tmpWav, targetPath, page, settings) {
+  const speakerWav = await resolveLocalPath(bookId, settings.speakerWav);
+  if (!speakerWav) {
+    throw new Error("TTS speaker_wav is required for coqui_xtts_v2.");
+  }
+
+  await stat(speakerWav);
+  await execFileAsync(
+    settings.command,
+    [
+      "--model_name",
+      settings.model,
+      "--text",
+      text,
+      "--speaker_wav",
+      speakerWav,
+      "--language_idx",
+      settings.language,
+      "--out_path",
+      tmpRawWav
+    ],
+    {
+      timeout: 600_000,
+      maxBuffer: 1024 * 1024 * 10
+    }
+  );
+  await execFileAsync("/usr/bin/afconvert", ["-f", "WAVE", "-d", "LEI16@24000", tmpRawWav, tmpWav], {
+    timeout: 120_000,
+    maxBuffer: 1024 * 1024
+  });
+  await rename(tmpWav, targetPath);
+
+  page.audio.provider = "coqui_xtts_v2";
+  page.audio.voice = path.basename(speakerWav);
+  page.audio.speaker_wav = path.relative(path.join(booksDir, bookId), speakerWav);
+  page.audio.language = settings.language;
+  page.audio.model = settings.model;
+  page.audio.content_type = "audio/wav";
+}
+
+async function synthesizeVoice(bookId, text, page, book) {
   const targetPath = audioFilePath(bookId, page);
   const tmpBase = `${targetPath}.${Date.now()}`;
   const tmpAiff = `${tmpBase}.aiff`;
+  const tmpRawWav = `${tmpBase}.raw.wav`;
   const tmpWav = `${tmpBase}.wav`;
+  const settings = ttsSettings(book);
 
   try {
-    await execFileAsync("/usr/bin/say", ["-v", "Samantha", "-o", tmpAiff, text], {
-      timeout: 120_000,
-      maxBuffer: 1024 * 1024
-    });
-    await execFileAsync("/usr/bin/afconvert", ["-f", "WAVE", "-d", "LEI16@24000", tmpAiff, tmpWav], {
-      timeout: 120_000,
-      maxBuffer: 1024 * 1024
-    });
-    await rename(tmpWav, targetPath);
-
-    page.audio.provider = "macos_say";
-    page.audio.voice = "Samantha";
-    page.audio.model = "macOS say";
-    page.audio.content_type = "audio/wav";
+    if (settings.provider === "coqui_xtts_v2") {
+      await synthesizeWithCoquiXtts(bookId, text, tmpRawWav, tmpWav, targetPath, page, settings);
+    } else if (settings.provider === "macos_say") {
+      await synthesizeWithMacosSay(text, tmpAiff, tmpWav, targetPath, page, settings);
+    } else {
+      throw new Error(`Unsupported TTS provider: ${settings.provider}`);
+    }
   } finally {
     await removeIfExists(tmpAiff);
+    await removeIfExists(tmpRawWav);
     await removeIfExists(tmpWav);
   }
 }
@@ -222,7 +318,7 @@ async function handleApi(req, res) {
     }
 
     page.content = body.content;
-    await synthesizeVoice(bookId, body.content, page);
+    await synthesizeVoice(bookId, body.content, page, book);
     await saveBook(bookPath, book);
     sendJson(res, 200, { ok: true, page, audioUpdatedAt: Date.now() });
     return true;
