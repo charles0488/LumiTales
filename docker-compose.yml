@@ -11,9 +11,11 @@ services:
       # Set to "1" after reviewing and accepting the XTTS model license.
       # COQUI_TOS_AGREED: "1"
     volumes:
-      - ./books:/app/books
+      - livbookreader-books:/app/books
       - ./voices:/app/voices:ro
       - livbookreader-tts-cache:/models
 
 volumes:
+  livbookreader-books:
+    name: livbookreader-books
   livbookreader-tts-cache:

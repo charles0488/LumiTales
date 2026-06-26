@@ -3,15 +3,15 @@
   "pages": [
     {
       "page_number": 0,
-      "content": "This is Buzzzy Bee's Night Out. This lovely story was written by Carol Moore and illustrated by Dan Wetzel.",
+      "content": "Listen up! We are starting a story called Buzzzy Bee's Night Out. This wonderful book was written by Carol Moore and illustrated by Dan Wetzel. Get ready to explore!",
       "image": {
-        "path": "./books/buzz_bee_night_out/images/page_000.png",
+        "path": "images/page_000.png",
         "filename": "page_000.png",
         "content_type": "image/png"
       },
       "audio": {
-        "path": "voices/page000.wav",
-        "filename": "page000.wav",
+        "path": "voices/page_000.wav",
+        "filename": "page_000.wav",
         "content_type": "audio/wav",
         "provider": "coqui_xtts_v2",
         "language": "en",
@@ -20,15 +20,15 @@
     },
     {
       "page_number": 1,
-      "content": "Look at Buzzy Bee! She is flying tonight near a hanging beehive under the moon. Guess what? Buzzy Bee is not like other bees. Other bees only find their honey during the day, but look how she does it at night!",
+      "content": "The sky is dark blue, oh what a night! Here we see Buzzy Bee flying near his big beehive. Isn't he special? Because Buzzy Bee is not like other bees who only find honey during the day.",
       "image": {
-        "path": "./books/buzz_bee_night_out/images/page_001.png",
+        "path": "images/page_001.png",
         "filename": "page_001.png",
         "content_type": "image/png"
       },
       "audio": {
-        "path": "voices/page001.wav",
-        "filename": "page001.wav",
+        "path": "voices/page_001.wav",
+        "filename": "page_001.wav",
         "content_type": "audio/wav",
         "provider": "coqui_xtts_v2",
         "language": "en",
@@ -37,15 +37,15 @@
     },
     {
       "page_number": 2,
-      "content": "Oh wow, check out this spot! We see a green frog sitting on a lily pad. Next to him is a beautiful white and pink night lily. The book reminds us that these lovely night lilies taste yummy.",
+      "content": "Look at this peaceful pond! A green frog sits on a lily pad while our bee visits a beautiful Night Lily. The text whispers a secret to us: 'Night lilies taste yummy.'",
       "image": {
-        "path": "./books/buzz_bee_night_out/images/page_002.png",
+        "path": "images/page_002.png",
         "filename": "page_002.png",
         "content_type": "image/png"
       },
       "audio": {
-        "path": "voices/page002.wav",
-        "filename": "page002.wav",
+        "path": "voices/page_002.wav",
+        "filename": "page_002.wav",
         "content_type": "audio/wav",
         "provider": "coqui_xtts_v2",
         "language": "en",
@@ -54,15 +54,15 @@
     },
     {
       "page_number": 3,
-      "content": "Look at the yellow bee floating near a big white flower blooming right on a cactus against a deep purple background. It says, 'This flower isn't bad.' Maybe it is just perfect for her.",
+      "content": "Now the scene changes in a warm, colorful place. Our yellow bee approaches a big white cactus flower. He notices a caption that tells him something nice: 'This flower isn't bad.'",
       "image": {
-        "path": "./books/buzz_bee_night_out/images/page_003.png",
+        "path": "images/page_003.png",
         "filename": "page_003.png",
         "content_type": "image/png"
       },
       "audio": {
-        "path": "voices/page003.wav",
-        "filename": "page003.wav",
+        "path": "voices/page_003.wav",
+        "filename": "page_003.wav",
         "content_type": "audio/wav",
         "provider": "coqui_xtts_v2",
         "language": "en",
@@ -71,15 +71,15 @@
     },
     {
       "page_number": 4,
-      "content": "Oh dear! A cartoon bee flies through the dark blue night sky toward a glowing white flower, but the little bee seems quite confused. It asks, 'Uh oh. Where am I?'",
+      "content": "Whoa! The setting is dark blue water. Our little bee floats by a glowing flower and looks very confused. He seems to wonder, 'Uh oh. Where am I?'",
       "image": {
-        "path": "./books/buzz_bee_night_out/images/page_004.png",
+        "path": "images/page_004.png",
         "filename": "page_004.png",
         "content_type": "image/png"
       },
       "audio": {
-        "path": "voices/page004.wav",
-        "filename": "page004.wav",
+        "path": "voices/page_004.wav",
+        "filename": "page_004.wav",
         "content_type": "audio/wav",
         "provider": "coqui_xtts_v2",
         "language": "en",
@@ -88,20 +88,162 @@
     },
     {
       "page_number": 5,
-      "content": "Look at this big rescue! The bee is saved by two smaller dragonflies against the dark purple sky. It looks like someone wrote, 'Rescued again.'",
+      "content": "Finally, we look up into the sky! Two fun flies sit on something yellow against dark blue clouds. Amidst the cacti, the gentle message reminds us they were 'Rescued again.'",
       "image": {
-        "path": "./books/buzz_bee_night_out/images/page_005.png",
+        "path": "images/page_005.png",
         "filename": "page_005.png",
         "content_type": "image/png"
       },
       "audio": {
-        "path": "voices/page005.wav",
-        "filename": "page005.wav",
+        "path": "voices/page_005.wav",
+        "filename": "page_005.wav",
         "content_type": "audio/wav",
         "provider": "coqui_xtts_v2",
         "language": "en",
         "model": "tts_models/multilingual/multi-dataset/xtts_v2"
       }
     }
-  ]
+  ],
+  "questions": {
+    "before_reading": {
+      "prompt": {
+        "text": "Before we jump into the story, let's warm up our imaginations with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/before_reading/prompt.wav",
+          "filename": "prompt.wav",
+          "content_type": "audio/wav",
+          "provider": "coqui_xtts_v2",
+          "language": "en",
+          "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+        }
+      },
+      "questions": [
+        {
+          "text": "What color is the sky tonight?",
+          "audio": {
+            "path": "voices_of_questions/before_reading/question_000.wav",
+            "filename": "question_000.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        },
+        {
+          "text": "Where does Buzzy Bee live?",
+          "audio": {
+            "path": "voices_of_questions/before_reading/question_001.wav",
+            "filename": "question_001.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        },
+        {
+          "text": "Will he only find sweet honey today?",
+          "audio": {
+            "path": "voices_of_questions/before_reading/question_002.wav",
+            "filename": "question_002.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        },
+        {
+          "text": "What time of day will this story happen?",
+          "audio": {
+            "path": "voices_of_questions/before_reading/question_003.wav",
+            "filename": "question_003.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        },
+        {
+          "text": "Can a bee fly in the dark?",
+          "audio": {
+            "path": "voices_of_questions/before_reading/question_004.wav",
+            "filename": "question_004.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        }
+      ]
+    },
+    "after_reading": {
+      "prompt": {
+        "text": "Great reading! Let's think back on the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/after_reading/prompt.wav",
+          "filename": "prompt.wav",
+          "content_type": "audio/wav",
+          "provider": "coqui_xtts_v2",
+          "language": "en",
+          "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+        }
+      },
+      "questions": [
+        {
+          "text": "What did Buzzy Bee learn about night lilies?",
+          "audio": {
+            "path": "voices_of_questions/after_reading/question_000.wav",
+            "filename": "question_000.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        },
+        {
+          "text": "How was the pond setting described?",
+          "audio": {
+            "path": "voices_of_questions/after_reading/question_001.wav",
+            "filename": "question_001.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        },
+        {
+          "text": "Where did Buzzy Bee feel confused?",
+          "audio": {
+            "path": "voices_of_questions/after_reading/question_002.wav",
+            "filename": "question_002.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        },
+        {
+          "text": "Who or what helped keep everyone safe at the end?",
+          "audio": {
+            "path": "voices_of_questions/after_reading/question_003.wav",
+            "filename": "question_003.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        },
+        {
+          "text": "If you were a bee, what would you explore at night?",
+          "audio": {
+            "path": "voices_of_questions/after_reading/question_004.wav",
+            "filename": "question_004.wav",
+            "content_type": "audio/wav",
+            "provider": "coqui_xtts_v2",
+            "language": "en",
+            "model": "tts_models/multilingual/multi-dataset/xtts_v2"
+          }
+        }
+      ]
+    }
+  }
 }

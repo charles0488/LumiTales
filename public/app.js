@@ -19,7 +19,18 @@ const elements = {
   autoAdvance: document.querySelector("#autoAdvance"),
   content: document.querySelector("#pageContent"),
   save: document.querySelector("#saveButton"),
-  status: document.querySelector("#saveStatus")
+  status: document.querySelector("#saveStatus"),
+  questionDialog: document.querySelector("#questionDialog"),
+  questionDialogTitle: document.querySelector("#questionDialogTitle"),
+  questionDialogMessage: document.querySelector("#questionDialogMessage"),
+  questionConfirm: document.querySelector("#questionConfirm"),
+  questionCancel: document.querySelector("#questionCancel")
+};
+
+const questionDelayMs = 30000;
+const fallbackQuestionPrompts = {
+  before_reading: "I have a few questions for you. Are you ready for the questions?",
+  after_reading: "Now, this is the end of the story. Are you ready for a few questions?"
 };
 
 let books = [];
@@ -32,6 +43,14 @@ let dirty = false;
 let statusTimer;
 let isShelfOpen = false;
 let isPlaybackPaneVisible = true;
+let playbackQueue = [];
+let playbackCursor = 0;
+let activePlaybackItem = null;
+let playbackDelayTimer;
+let queueCompletion;
+let questionDialogKind = null;
+let playedBeforeReadingQuestions = false;
+let playedAfterReadingQuestions = false;
 
 function assetPath(asset) {
   const rawPath = asset?.path?.replace(/^\.\//, "") || "";
@@ -51,8 +70,90 @@ function audioPath(page) {
   return `${assetPath(page.audio)}${version}`;
 }
 
+function questionAudioPath(question) {
+  return assetPath(question.audio);
+}
+
 function currentPage() {
   return book.pages[currentIndex];
+}
+
+function questionSection(kind) {
+  return book?.questions?.[kind];
+}
+
+function questionsFor(kind) {
+  const section = questionSection(kind);
+  const questions = Array.isArray(section) ? section : section?.questions;
+  return (questions || []).filter((question) => question?.audio?.path);
+}
+
+function promptFor(kind) {
+  const section = questionSection(kind);
+  if (Array.isArray(section)) {
+    return {
+      text: fallbackQuestionPrompts[kind],
+      audio: null
+    };
+  }
+
+  return {
+    text: section?.prompt?.text || fallbackQuestionPrompts[kind],
+    audio: section?.prompt?.audio || null
+  };
+}
+
+function clearPlaybackQueue() {
+  window.clearTimeout(playbackDelayTimer);
+  playbackDelayTimer = null;
+  queueCompletion = null;
+  playbackQueue = [];
+  playbackCursor = 0;
+  activePlaybackItem = null;
+}
+
+async function speakPrompt(prompt) {
+  if (!prompt.audio?.path) {
+    return;
+  }
+
+  activePlaybackItem = { type: "prompt" };
+  elements.audio.src = assetPath(prompt.audio);
+  try {
+    elements.audio.currentTime = 0;
+    await elements.audio.play();
+  } catch {
+    setStatus("Press Yes when ready");
+  }
+}
+
+function showQuestionDialog(kind) {
+  const questions = questionsFor(kind);
+  if (questions.length === 0) {
+    return false;
+  }
+
+  const prompt = promptFor(kind);
+  questionDialogKind = kind;
+  isReading = false;
+  elements.questionDialogTitle.textContent = "Ready for questions?";
+  elements.questionDialogMessage.textContent = prompt.text;
+  elements.questionDialog.hidden = false;
+  setPlaybackPaneVisible(true);
+  updateNavigation();
+  speakPrompt(prompt);
+  elements.questionConfirm.focus();
+  return true;
+}
+
+function hideQuestionDialog() {
+  questionDialogKind = null;
+  elements.questionDialog.hidden = true;
+  if (activePlaybackItem?.type === "prompt") {
+    elements.audio.pause();
+    elements.audio.currentTime = 0;
+    activePlaybackItem = null;
+  }
 }
 
 function setStatus(message) {
@@ -115,6 +216,7 @@ function setEditingMode(nextIsEditing) {
 
 function renderPage({ playAudio = isReading } = {}) {
   const page = currentPage();
+  clearPlaybackQueue();
   elements.title.textContent = book.title;
   elements.pageCount.textContent = `Page ${currentIndex + 1} of ${book.pages.length}`;
   elements.image.src = assetPath(page.image);
@@ -130,6 +232,24 @@ function renderPage({ playAudio = isReading } = {}) {
   } else {
     elements.audio.pause();
     elements.audio.currentTime = 0;
+  }
+}
+
+async function playAudioElement({ restart = true } = {}) {
+  isReading = true;
+  updateNavigation();
+
+  try {
+    if (restart) {
+      elements.audio.currentTime = 0;
+    }
+    await elements.audio.play();
+    setPlaybackPaneVisible(false);
+  } catch {
+    isReading = false;
+    setPlaybackPaneVisible(true);
+    updateNavigation();
+    setStatus("Press Play to start audio");
   }
 }
 
@@ -183,26 +303,114 @@ function assetPathForBook(nextBookId, asset) {
 }
 
 async function playCurrentAudio() {
-  isReading = true;
-  updateNavigation();
+  await playQueuedAudio([{ type: "page", pageIndex: currentIndex }]);
+}
 
-  try {
-    elements.audio.currentTime = 0;
-    await elements.audio.play();
-    setPlaybackPaneVisible(false);
-  } catch {
-    isReading = false;
-    setPlaybackPaneVisible(true);
-    updateNavigation();
-    setStatus("Press Play to start audio");
+async function playQueuedAudio(queue, { onComplete } = {}) {
+  window.clearTimeout(playbackDelayTimer);
+  playbackDelayTimer = null;
+  playbackQueue = queue;
+  playbackCursor = 0;
+  queueCompletion = onComplete;
+  await playNextQueuedAudio();
+}
+
+async function playNextQueuedAudio() {
+  window.clearTimeout(playbackDelayTimer);
+  playbackDelayTimer = null;
+  activePlaybackItem = playbackQueue[playbackCursor] || null;
+  playbackCursor += 1;
+
+  if (!activePlaybackItem) {
+    completePlaybackQueue();
+    return;
   }
+
+  if (activePlaybackItem.type === "question") {
+    elements.audio.src = questionAudioPath(activePlaybackItem.question);
+  } else if (activePlaybackItem.type === "delay") {
+    isReading = true;
+    updateNavigation();
+    setPlaybackPaneVisible(false);
+    playbackDelayTimer = window.setTimeout(() => {
+      playNextQueuedAudio();
+    }, activePlaybackItem.duration);
+    return;
+  } else {
+    const page = book.pages[activePlaybackItem.pageIndex];
+    elements.audio.src = audioPath(page);
+  }
+
+  await playAudioElement();
 }
 
 function pauseAudio() {
   isReading = false;
   elements.audio.pause();
+  window.clearTimeout(playbackDelayTimer);
+  playbackDelayTimer = null;
   setPlaybackPaneVisible(true);
   updateNavigation();
+}
+
+function stopPlayback() {
+  isReading = false;
+  clearPlaybackQueue();
+  setPlaybackPaneVisible(true);
+  updateNavigation();
+}
+
+function completePlaybackQueue() {
+  const onComplete = queueCompletion;
+  clearPlaybackQueue();
+  if (onComplete) {
+    onComplete();
+    return;
+  }
+  stopPlayback();
+}
+
+function questionPlaybackQueue(kind) {
+  return questionsFor(kind).flatMap((question, index, questions) => {
+    const item = {
+      type: "question",
+      kind,
+      question
+    };
+
+    if (index === questions.length - 1) {
+      return [item];
+    }
+
+    return [item, { type: "delay", duration: questionDelayMs }];
+  });
+}
+
+function startQuestionPlayback(kind) {
+  hideQuestionDialog();
+  const queue = questionPlaybackQueue(kind);
+  if (queue.length === 0) {
+    completeQuestionFlow(kind);
+    return;
+  }
+
+  playQueuedAudio(queue, {
+    onComplete: () => completeQuestionFlow(kind)
+  });
+}
+
+function completeQuestionFlow(kind) {
+  if (kind === "before_reading" && elements.autoAdvance.checked && currentIndex < book.pages.length - 1) {
+    goNext({ playAudio: true });
+    return;
+  }
+
+  stopPlayback();
+}
+
+function skipQuestionPlayback(kind) {
+  hideQuestionDialog();
+  completeQuestionFlow(kind);
 }
 
 function goToPage(index, options = {}) {
@@ -255,10 +463,14 @@ async function saveCurrentPage() {
 
 async function selectBook(nextBookId, { updateUrl = true } = {}) {
   pauseAudio();
+  clearPlaybackQueue();
+  hideQuestionDialog();
   setEditingMode(false);
   bookId = nextBookId;
   book = null;
   currentIndex = 0;
+  playedBeforeReadingQuestions = false;
+  playedAfterReadingQuestions = false;
   dirty = false;
   elements.title.textContent = "Loading...";
   elements.pageCount.textContent = "";
@@ -304,6 +516,8 @@ elements.next.addEventListener("click", () => {
 elements.play.addEventListener("click", () => {
   if (isReading) {
     pauseAudio();
+  } else if (activePlaybackItem && elements.audio.currentTime > 0 && !elements.audio.ended) {
+    playAudioElement({ restart: false });
   } else {
     playCurrentAudio();
   }
@@ -313,13 +527,55 @@ elements.edit.addEventListener("click", () => {
   setEditingMode(!isEditing);
 });
 
+elements.questionConfirm.addEventListener("click", () => {
+  if (questionDialogKind) {
+    startQuestionPlayback(questionDialogKind);
+  }
+});
+
+elements.questionCancel.addEventListener("click", () => {
+  if (questionDialogKind) {
+    skipQuestionPlayback(questionDialogKind);
+  }
+});
+
 elements.audio.addEventListener("ended", () => {
+  if (playbackCursor < playbackQueue.length) {
+    playNextQueuedAudio();
+    return;
+  }
+
+  const endedItem = activePlaybackItem;
+
+  if (endedItem?.type === "question") {
+    completePlaybackQueue();
+    return;
+  }
+
+  clearPlaybackQueue();
+
+  if (endedItem?.type !== "page") {
+    stopPlayback();
+    return;
+  }
+
+  if (currentIndex === 0 && !playedBeforeReadingQuestions) {
+    playedBeforeReadingQuestions = true;
+    if (showQuestionDialog("before_reading")) {
+      return;
+    }
+  }
+
   if (elements.autoAdvance.checked && currentIndex < book.pages.length - 1) {
     goNext({ playAudio: true });
+  } else if (currentIndex === book.pages.length - 1 && !playedAfterReadingQuestions) {
+    playedAfterReadingQuestions = true;
+    if (showQuestionDialog("after_reading")) {
+      return;
+    }
+    stopPlayback();
   } else {
-    isReading = false;
-    setPlaybackPaneVisible(true);
-    updateNavigation();
+    stopPlayback();
   }
 });
 
@@ -350,6 +606,13 @@ elements.shelfScrim.addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (questionDialogKind) {
+    if (event.key === "Escape") {
+      skipQuestionPlayback(questionDialogKind);
+    }
+    return;
+  }
+
   const isEditingText = document.activeElement === elements.content;
   if (isEditingText) {
     return;

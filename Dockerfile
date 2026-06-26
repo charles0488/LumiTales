@@ -19,6 +19,7 @@ RUN apt-get update \
       git \
       libsndfile1 \
       nodejs \
+      unzip \
     && python -m pip install --no-cache-dir --upgrade pip "setuptools<81" wheel \
     && python -m pip install --no-cache-dir \
       --index-url https://download.pytorch.org/whl/cpu \
@@ -35,10 +36,12 @@ WORKDIR /app
 COPY package.json ./
 COPY server.js ./
 COPY public ./public
-COPY books ./books
 COPY voices ./voices
 
 RUN test -f /app/voices/satisfaction.wav
+RUN mkdir -p /app/books
+
+VOLUME ["/app/books"]
 
 EXPOSE 3000
 

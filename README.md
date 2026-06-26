@@ -52,6 +52,7 @@ docker run --rm -it \
   -e TTS_SPEAKER_WAV=/app/voices/satisfaction.wav \
   -e TTS_LANGUAGE=en \
   -e TTS_MODEL=tts_models/multilingual/multi-dataset/xtts_v2 \
+  -v livbookreader-books:/app/books \
   -v livbookreader-tts-cache:/models \
   liv-book-reader
 ```
@@ -62,7 +63,7 @@ Then open:
 http://localhost:3000/
 ```
 
-The image includes the current `books/` and `voices/` folders, including `voices/satisfaction.wav` at `/app/voices/satisfaction.wav`. The compose file also mounts local `books/` and `voices/` folders into the container so edits persist on your machine. By default, edited pages are regenerated with:
+The image includes the current `voices/` folder, including `voices/satisfaction.wav` at `/app/voices/satisfaction.wav`. Docker stores `/app/books` in the named `livbookreader-books` volume, so uploaded books and edited page files survive container rebuilds and image updates. New books should be added through the app or copied into the Docker volume. The compose file still mounts local `voices/` read-only so you can change reference WAV files without rebuilding the image. By default, edited pages are regenerated with:
 
 ```text
 voices/satisfaction.wav
@@ -70,12 +71,14 @@ voices/satisfaction.wav
 
 Change `TTS_SPEAKER_WAV` in `docker-compose.yml` to use another mounted reference WAV, such as `/app/voices/king_love.wav` or `/app/voices/groovy.wav`.
 
-To override the bundled books/voices with local folders when using plain Docker, add:
+To use local folders instead of the named Docker volumes when using plain Docker, replace the volume flags with:
 
 ```sh
 -v "$PWD/books:/app/books" \
 -v "$PWD/voices:/app/voices:ro"
 ```
+
+To inspect or back up the persistent books data, use the `livbookreader-books` Docker volume.
 
 If XTTS asks for model license confirmation, review the license and then set `COQUI_TOS_AGREED: "1"` in `docker-compose.yml`.
 

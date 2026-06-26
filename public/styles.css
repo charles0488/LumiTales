@@ -96,6 +96,62 @@ textarea {
   display: none;
 }
 
+.question-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(31, 41, 51, 0.28);
+}
+
+.question-dialog[hidden] {
+  display: none;
+}
+
+.question-dialog-panel {
+  display: grid;
+  gap: 16px;
+  width: min(420px, 100%);
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow);
+}
+
+.question-dialog-panel h2,
+.question-dialog-panel p {
+  margin: 0;
+}
+
+.question-dialog-panel h2 {
+  font-size: 1.35rem;
+}
+
+.question-dialog-panel p {
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.question-dialog-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+#questionCancel {
+  background: #edf4ef;
+  color: var(--primary-strong);
+}
+
+#questionCancel:hover {
+  background: #dfeee8;
+}
+
 .bookshelf-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto 36px;
