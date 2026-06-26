@@ -14,7 +14,7 @@ const port = Number(process.env.PORT || 3000);
 const execFileAsync = promisify(execFile);
 const defaultTtsModel = "tts_models/multilingual/multi-dataset/xtts_v2";
 const defaultTtsLanguage = "en";
-const defaultAudioConvertCommand = process.env.AUDIO_CONVERT_COMMAND || (process.platform === "darwin" ? "/usr/bin/afconvert" : "ffmpeg");
+const defaultAudioConvertCommand = process.env.AUDIO_CONVERT_COMMAND || "ffmpeg";
 const maxBookUploadSize = 50 * 1024 * 1024;
 
 const mimeTypes = {
@@ -23,7 +23,7 @@ const mimeTypes = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
-  ".wav": "audio/wav"
+  ".mp3": "audio/mpeg"
 };
 
 function sendJson(res, status, payload) {
@@ -333,12 +333,12 @@ function compareAssetFiles(imageFiles, voiceFiles) {
   const imageStems = new Set(imageFiles.map(fileStem));
   const voiceNames = new Set(voiceFiles);
   const voiceStems = new Set(voiceFiles.map(fileStem));
-  const missingVoices = [...imageStems].filter((stem) => !voiceNames.has(`${stem}.wav`));
+  const missingVoices = [...imageStems].filter((stem) => !voiceNames.has(`${stem}.mp3`));
   const missingImages = [...voiceStems].filter((stem) => !imageStems.has(stem));
-  const nonWavVoices = voiceFiles.filter((fileName) => path.extname(fileName).toLowerCase() !== ".wav");
+  const nonMp3Voices = voiceFiles.filter((fileName) => path.extname(fileName).toLowerCase() !== ".mp3");
 
-  if (missingVoices.length > 0 || missingImages.length > 0 || nonWavVoices.length > 0) {
-    throw httpError(400, "Each image file must have a matching .wav file in voices, for example images/page_002.png requires voices/page_002.wav.");
+  if (missingVoices.length > 0 || missingImages.length > 0 || nonMp3Voices.length > 0) {
+    throw httpError(400, "Each image file must have a matching .mp3 file in voices, for example images/page_002.png requires voices/page_002.mp3.");
   }
 }
 
@@ -520,7 +520,7 @@ function ttsSettings(book) {
   const bookTts = book.tts || {};
   return {
     provider: process.env.TTS_PROVIDER || bookTts.provider || "macos_say",
-    speakerWav: process.env.TTS_SPEAKER_WAV || bookTts.speaker_wav || "",
+    speakerMp3: process.env.TTS_SPEAKER_MP3 || bookTts.speaker_mp3 || "",
     language: process.env.TTS_LANGUAGE || bookTts.language || defaultTtsLanguage,
     model: process.env.TTS_MODEL || bookTts.model || defaultTtsModel,
     command: process.env.TTS_COMMAND || bookTts.command || "tts",
@@ -528,26 +528,14 @@ function ttsSettings(book) {
   };
 }
 
-async function convertToReaderWav(inputPath, outputPath) {
-  if (path.basename(defaultAudioConvertCommand) === "ffmpeg") {
-    await execFileAsync(
-      defaultAudioConvertCommand,
-      ["-y", "-i", inputPath, "-ac", "1", "-ar", "24000", "-sample_fmt", "s16", outputPath],
-      {
-        timeout: 120_000,
-        maxBuffer: 1024 * 1024
-      }
-    );
-    return;
-  }
-
-  await execFileAsync(defaultAudioConvertCommand, ["-f", "WAVE", "-d", "LEI16@24000", inputPath, outputPath], {
+async function convertToReaderMp3(inputPath, outputPath) {
+  await execFileAsync(defaultAudioConvertCommand, ["-y", "-i", inputPath, "-ac", "1", "-ar", "24000", "-codec:a", "libmp3lame", "-b:a", "96k", outputPath], {
     timeout: 120_000,
     maxBuffer: 1024 * 1024
   });
 }
 
-async function synthesizeWithMacosSay(text, tmpAiff, tmpWav, targetPath, page, settings) {
+async function synthesizeWithMacosSay(text, tmpAiff, tmpMp3, targetPath, page, settings) {
   if (process.platform !== "darwin") {
     throw new Error("macos_say TTS requires macOS. Set TTS_PROVIDER=coqui_xtts_v2 in Docker.");
   }
@@ -556,22 +544,22 @@ async function synthesizeWithMacosSay(text, tmpAiff, tmpWav, targetPath, page, s
     timeout: 120_000,
     maxBuffer: 1024 * 1024
   });
-  await convertToReaderWav(tmpAiff, tmpWav);
-  await rename(tmpWav, targetPath);
+  await convertToReaderMp3(tmpAiff, tmpMp3);
+  await rename(tmpMp3, targetPath);
 
   page.audio.provider = "macos_say";
   page.audio.voice = settings.macosVoice;
   page.audio.model = "macOS say";
-  page.audio.content_type = "audio/wav";
+  page.audio.content_type = "audio/mpeg";
 }
 
-async function synthesizeWithCoquiXtts(bookId, text, tmpRawWav, tmpWav, targetPath, page, settings) {
-  const speakerWav = await resolveLocalPath(bookId, settings.speakerWav);
-  if (!speakerWav) {
-    throw new Error("TTS speaker_wav is required for coqui_xtts_v2.");
+async function synthesizeWithCoquiXtts(bookId, text, tmpRawAudio, tmpMp3, targetPath, page, settings) {
+  const speakerMp3 = await resolveLocalPath(bookId, settings.speakerMp3);
+  if (!speakerMp3) {
+    throw new Error("TTS speaker_mp3 is required for coqui_xtts_v2.");
   }
 
-  await stat(speakerWav);
+  await stat(speakerMp3);
   await execFileAsync(
     settings.command,
     [
@@ -580,48 +568,48 @@ async function synthesizeWithCoquiXtts(bookId, text, tmpRawWav, tmpWav, targetPa
       "--text",
       text,
       "--speaker_wav",
-      speakerWav,
+      speakerMp3,
       "--language_idx",
       settings.language,
       "--out_path",
-      tmpRawWav
+      tmpRawAudio
     ],
     {
       timeout: 600_000,
       maxBuffer: 1024 * 1024 * 10
     }
   );
-  await convertToReaderWav(tmpRawWav, tmpWav);
-  await rename(tmpWav, targetPath);
+  await convertToReaderMp3(tmpRawAudio, tmpMp3);
+  await rename(tmpMp3, targetPath);
 
   page.audio.provider = "coqui_xtts_v2";
-  page.audio.voice = path.basename(speakerWav);
-  page.audio.speaker_wav = path.relative(path.join(booksDir, bookId), speakerWav);
+  page.audio.voice = path.basename(speakerMp3);
+  page.audio.speaker_mp3 = path.relative(path.join(booksDir, bookId), speakerMp3);
   page.audio.language = settings.language;
   page.audio.model = settings.model;
-  page.audio.content_type = "audio/wav";
+  page.audio.content_type = "audio/mpeg";
 }
 
 async function synthesizeVoice(bookId, text, page, book) {
   const targetPath = audioFilePath(bookId, page);
   const tmpBase = `${targetPath}.${Date.now()}`;
   const tmpAiff = `${tmpBase}.aiff`;
-  const tmpRawWav = `${tmpBase}.raw.wav`;
-  const tmpWav = `${tmpBase}.wav`;
+  const tmpRawAudio = `${tmpBase}.raw.mp3`;
+  const tmpMp3 = `${tmpBase}.mp3`;
   const settings = ttsSettings(book);
 
   try {
     if (settings.provider === "coqui_xtts_v2") {
-      await synthesizeWithCoquiXtts(bookId, text, tmpRawWav, tmpWav, targetPath, page, settings);
+      await synthesizeWithCoquiXtts(bookId, text, tmpRawAudio, tmpMp3, targetPath, page, settings);
     } else if (settings.provider === "macos_say") {
-      await synthesizeWithMacosSay(text, tmpAiff, tmpWav, targetPath, page, settings);
+      await synthesizeWithMacosSay(text, tmpAiff, tmpMp3, targetPath, page, settings);
     } else {
       throw new Error(`Unsupported TTS provider: ${settings.provider}`);
     }
   } finally {
     await removeIfExists(tmpAiff);
-    await removeIfExists(tmpRawWav);
-    await removeIfExists(tmpWav);
+    await removeIfExists(tmpRawAudio);
+    await removeIfExists(tmpMp3);
   }
 }
 

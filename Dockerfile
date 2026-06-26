@@ -4,6 +4,7 @@ ENV NODE_ENV=production \
     PORT=3000 \
     TTS_PROVIDER=coqui_xtts_v2 \
     TTS_COMMAND=tts \
+    TTS_SPEAKER_MP3=/app/voices/satisfaction.mp3 \
     TTS_LANGUAGE=en \
     TTS_MODEL=tts_models/multilingual/multi-dataset/xtts_v2 \
     TTS_HOME=/models/tts \
@@ -38,7 +39,7 @@ COPY server.js ./
 COPY public ./public
 COPY voices ./voices
 
-RUN test -f /app/voices/satisfaction.wav
+RUN test -f /app/voices/satisfaction.mp3
 RUN mkdir -p /app/books
 
 VOLUME ["/app/books"]

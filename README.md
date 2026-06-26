@@ -49,7 +49,7 @@ docker build -t liv-book-reader .
 docker run --rm -it \
   -p 3000:3000 \
   -e TTS_PROVIDER=coqui_xtts_v2 \
-  -e TTS_SPEAKER_WAV=/app/voices/satisfaction.wav \
+  -e TTS_SPEAKER_MP3=/app/voices/satisfaction.mp3 \
   -e TTS_LANGUAGE=en \
   -e TTS_MODEL=tts_models/multilingual/multi-dataset/xtts_v2 \
   -v livbookreader-books:/app/books \
@@ -63,13 +63,13 @@ Then open:
 http://localhost:3000/
 ```
 
-The image includes the current `voices/` folder, including `voices/satisfaction.wav` at `/app/voices/satisfaction.wav`. Docker stores `/app/books` in the named `livbookreader-books` volume, so uploaded books and edited page files survive container rebuilds and image updates. New books should be added through the app or copied into the Docker volume. The compose file still mounts local `voices/` read-only so you can change reference WAV files without rebuilding the image. By default, edited pages are regenerated with:
+The image includes the current `voices/` folder, including `voices/satisfaction.mp3` at `/app/voices/satisfaction.mp3`. Docker stores `/app/books` in the named `livbookreader-books` volume, so uploaded books and edited page files survive container rebuilds and image updates. New books should be added through the app or copied into the Docker volume. The compose file still mounts local `voices/` read-only so you can change reference MP3 files without rebuilding the image. By default, edited pages are regenerated with:
 
 ```text
-voices/satisfaction.wav
+voices/satisfaction.mp3
 ```
 
-Change `TTS_SPEAKER_WAV` in `docker-compose.yml` to use another mounted reference WAV, such as `/app/voices/king_love.wav` or `/app/voices/groovy.wav`.
+Change `TTS_SPEAKER_MP3` in `docker-compose.yml` to use another mounted reference MP3, such as `/app/voices/king_love.mp3` or `/app/voices/groovy.mp3`.
 
 To use local folders instead of the named Docker volumes when using plain Docker, replace the volume flags with:
 
@@ -87,21 +87,21 @@ If XTTS asks for model license confirmation, review the license and then set `CO
 - Lists every valid book folder under `books/`.
 - Opens books from a visual bookshelf.
 - Displays each page image one at a time.
-- Plays each page's WAV narration.
+- Plays each page's MP3 narration.
 - Auto-advances after audio ends.
 - Supports manual previous/next page controls.
 - Lets users edit page text.
-- Regenerates and overwrites the page WAV after saving edited text.
+- Regenerates and overwrites the page MP3 after saving edited text.
 
 ## Notes
 
-Voice regeneration defaults to the macOS `say` command with the `Samantha` voice and converts output to 16-bit mono 24 kHz WAV using `afconvert`. Docker runs should use `TTS_PROVIDER=coqui_xtts_v2`; Linux containers do not include macOS `say`.
+Voice regeneration defaults to the macOS `say` command with the `Samantha` voice and converts output to 24 kHz MP3 using `ffmpeg`. Docker runs should use `TTS_PROVIDER=coqui_xtts_v2`; Linux containers do not include macOS `say`.
 
-To generate edited page audio from a custom reference voice WAV, install the Coqui TTS CLI and run with XTTS settings:
+To generate edited page audio from a custom reference voice MP3, install the Coqui TTS CLI and run with XTTS settings:
 
 ```sh
 TTS_PROVIDER=coqui_xtts_v2 \
-TTS_SPEAKER_WAV=/absolute/path/to/custom_voice.wav \
+TTS_SPEAKER_MP3=/absolute/path/to/custom_voice.mp3 \
 node server.js
 ```
 
@@ -111,7 +111,7 @@ You can also configure a book directly in `book.json`:
 {
   "tts": {
     "provider": "coqui_xtts_v2",
-    "speaker_wav": "voices/custom_voice.wav",
+    "speaker_mp3": "voices/custom_voice.mp3",
     "language": "en",
     "model": "tts_models/multilingual/multi-dataset/xtts_v2"
   }
