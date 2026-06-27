@@ -395,20 +395,6 @@ textarea {
   transform: translate(-50%, -46%) scale(0.96);
 }
 
-.reader-tools {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: 54px;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: auto;
-  padding: 0;
-}
-
 button {
   min-height: 44px;
   border: 0;
@@ -430,8 +416,7 @@ button:disabled {
 
 #prevButton,
 #playButton,
-#nextButton,
-#editButton {
+#nextButton {
   border: 1px solid rgba(255, 255, 255, 0.56);
   background: rgba(255, 255, 255, 0.22);
   box-shadow:
@@ -443,8 +428,7 @@ button:disabled {
 
 #prevButton:hover,
 #playButton:hover,
-#nextButton:hover,
-#editButton:hover {
+#nextButton:hover {
   background: rgba(255, 255, 255, 0.34);
 }
 
@@ -460,21 +444,6 @@ button:disabled {
   line-height: 1;
   min-height: 54px;
   min-width: 78px;
-}
-
-#editButton {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  width: 54px;
-  min-height: 54px;
-  font-size: 2rem;
-  line-height: 1;
-  backdrop-filter: none;
-}
-
-#editButton:hover {
-  background: transparent;
 }
 
 .auto-toggle {
@@ -608,14 +577,6 @@ button:disabled {
     width: min(280px, calc(100% - 20px));
     gap: 8px;
     padding: 8px;
-  }
-
-  .reader-tools {
-    bottom: 10px;
-    width: auto;
-    left: 10px;
-    gap: 8px;
-    padding: 0;
   }
 
   .auto-toggle {

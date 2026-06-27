@@ -14,7 +14,6 @@ const elements = {
   previous: document.querySelector("#prevButton"),
   play: document.querySelector("#playButton"),
   next: document.querySelector("#nextButton"),
-  edit: document.querySelector("#editButton"),
   editor: document.querySelector("#pageEditor"),
   autoAdvance: document.querySelector("#autoAdvance"),
   content: document.querySelector("#pageContent"),
@@ -189,7 +188,6 @@ function updateNavigation() {
   elements.previous.disabled = !hasBook || currentIndex === 0;
   elements.next.disabled = !hasBook || currentIndex === book.pages.length - 1;
   elements.play.disabled = !hasBook;
-  elements.edit.disabled = !hasBook;
   elements.save.disabled = !hasBook;
   if (!hasBook) {
     return;
@@ -197,9 +195,6 @@ function updateNavigation() {
 
   elements.play.textContent = isReading ? "⏸" : "▶";
   elements.play.setAttribute("aria-label", isReading ? "Pause" : "Play");
-  elements.edit.textContent = "✎";
-  elements.edit.setAttribute("aria-label", isEditing ? "Close" : "Edit");
-  elements.edit.setAttribute("aria-expanded", String(isEditing));
 }
 
 function setEditingMode(nextIsEditing) {
@@ -501,7 +496,6 @@ async function selectBook(nextBookId, { updateUrl = true } = {}) {
     elements.play.disabled = true;
     elements.previous.disabled = true;
     elements.next.disabled = true;
-    elements.edit.disabled = true;
   }
 }
 
@@ -521,10 +515,6 @@ elements.play.addEventListener("click", () => {
   } else {
     playCurrentAudio();
   }
-});
-
-elements.edit.addEventListener("click", () => {
-  setEditingMode(!isEditing);
 });
 
 elements.questionConfirm.addEventListener("click", () => {
@@ -667,7 +657,6 @@ async function init() {
     elements.play.disabled = true;
     elements.previous.disabled = true;
     elements.next.disabled = true;
-    elements.edit.disabled = true;
   }
 }
 
