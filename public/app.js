@@ -14,16 +14,14 @@ const elements = {
   previous: document.querySelector("#prevButton"),
   play: document.querySelector("#playButton"),
   next: document.querySelector("#nextButton"),
-  editor: document.querySelector("#pageEditor"),
   autoAdvance: document.querySelector("#autoAdvance"),
-  content: document.querySelector("#pageContent"),
-  save: document.querySelector("#saveButton"),
-  status: document.querySelector("#saveStatus"),
+  status: document.querySelector("#playbackStatus"),
   questionDialog: document.querySelector("#questionDialog"),
   questionDialogTitle: document.querySelector("#questionDialogTitle"),
   questionDialogMessage: document.querySelector("#questionDialogMessage"),
   questionConfirm: document.querySelector("#questionConfirm"),
-  questionCancel: document.querySelector("#questionCancel")
+  questionCancel: document.querySelector("#questionCancel"),
+  accountName: document.querySelector("#accountName")
 };
 
 const questionDelayMs = 30000;
@@ -37,8 +35,6 @@ let book;
 let bookId;
 let currentIndex = 0;
 let isReading = false;
-let isEditing = false;
-let dirty = false;
 let statusTimer;
 let isShelfOpen = false;
 let isPlaybackPaneVisible = true;
@@ -188,25 +184,12 @@ function updateNavigation() {
   elements.previous.disabled = !hasBook || currentIndex === 0;
   elements.next.disabled = !hasBook || currentIndex === book.pages.length - 1;
   elements.play.disabled = !hasBook;
-  elements.save.disabled = !hasBook;
   if (!hasBook) {
     return;
   }
 
   elements.play.textContent = isReading ? "⏸" : "▶";
   elements.play.setAttribute("aria-label", isReading ? "Pause" : "Play");
-}
-
-function setEditingMode(nextIsEditing) {
-  isEditing = nextIsEditing;
-  elements.editor.hidden = !isEditing;
-  document.body.classList.toggle("is-editing", isEditing);
-  updateNavigation();
-
-  if (isEditing) {
-    elements.content.focus();
-    elements.content.select();
-  }
 }
 
 function renderPage({ playAudio = isReading } = {}) {
@@ -217,9 +200,6 @@ function renderPage({ playAudio = isReading } = {}) {
   elements.image.src = assetPath(page.image);
   elements.image.alt = `${book.title}, page ${page.page_number}`;
   elements.audio.src = audioPath(page);
-  elements.content.value = page.content;
-  dirty = false;
-  setEditingMode(false);
   updateNavigation();
 
   if (playAudio) {
@@ -424,54 +404,19 @@ function goPrevious(options = {}) {
   goToPage(currentIndex - 1, options);
 }
 
-async function saveCurrentPage() {
-  const page = currentPage();
-  const content = elements.content.value.trim();
-  elements.save.disabled = true;
-  setStatus("Saving voice...");
-
-  try {
-    const response = await fetch(`/api/books/${bookId}/pages/${page.page_number}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ content })
-    });
-
-    if (!response.ok) {
-      throw new Error("Save failed.");
-    }
-
-    const result = await response.json();
-    page.content = content;
-    page.audio = result.page.audio;
-    page.audioUpdatedAt = result.audioUpdatedAt;
-    elements.audio.src = audioPath(page);
-    dirty = false;
-    setStatus("Saved");
-    setEditingMode(false);
-  } catch {
-    setStatus("Could not save");
-  } finally {
-    elements.save.disabled = false;
-  }
-}
-
 async function selectBook(nextBookId, { updateUrl = true } = {}) {
   pauseAudio();
   clearPlaybackQueue();
   hideQuestionDialog();
-  setEditingMode(false);
   bookId = nextBookId;
   book = null;
   currentIndex = 0;
   playedBeforeReadingQuestions = false;
   playedAfterReadingQuestions = false;
-  dirty = false;
   elements.title.textContent = "Loading...";
   elements.pageCount.textContent = "";
   elements.image.removeAttribute("src");
   elements.image.alt = "";
-  elements.content.value = "";
   updateNavigation();
   renderShelf();
 
@@ -492,7 +437,6 @@ async function selectBook(nextBookId, { updateUrl = true } = {}) {
   } catch {
     elements.title.textContent = "Could not load book";
     elements.pageCount.textContent = "";
-    elements.save.disabled = true;
     elements.play.disabled = true;
     elements.previous.disabled = true;
     elements.next.disabled = true;
@@ -577,12 +521,6 @@ elements.imageFrame.addEventListener("click", (event) => {
   setPlaybackPaneVisible(true);
 });
 
-elements.content.addEventListener("input", () => {
-  dirty = elements.content.value !== currentPage().content;
-  setStatus(dirty ? "Unsaved" : "");
-});
-
-elements.save.addEventListener("click", saveCurrentPage);
 elements.shelfToggle.addEventListener("click", () => {
   setShelfOpen(!isShelfOpen);
 });
@@ -600,11 +538,6 @@ document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       skipQuestionPlayback(questionDialogKind);
     }
-    return;
-  }
-
-  const isEditingText = document.activeElement === elements.content;
-  if (isEditingText) {
     return;
   }
 
@@ -634,6 +567,12 @@ async function init() {
   setPlaybackPaneVisible(true);
 
   try {
+    const meResponse = await fetch("/api/me");
+    if (meResponse.ok) {
+      const { user } = await meResponse.json();
+      elements.accountName.textContent = user?.name || user?.email || "Signed in";
+    }
+
     const response = await fetch("/api/books");
     if (!response.ok) {
       throw new Error("Books not found.");
@@ -653,19 +592,10 @@ async function init() {
   } catch {
     elements.title.textContent = "Could not load bookshelf";
     elements.pageCount.textContent = "";
-    elements.save.disabled = true;
     elements.play.disabled = true;
     elements.previous.disabled = true;
     elements.next.disabled = true;
   }
 }
-
-window.addEventListener("beforeunload", (event) => {
-  if (!dirty) {
-    return;
-  }
-  event.preventDefault();
-  event.returnValue = "";
-});
 
 init();

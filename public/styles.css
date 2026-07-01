@@ -25,8 +25,7 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-button,
-textarea {
+button {
   font: inherit;
 }
 
@@ -38,13 +37,8 @@ textarea {
   padding: 24px;
 }
 
-.is-editing .reader-shell {
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
-}
-
 .bookshelf,
-.stage,
-.editor {
+.stage {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -56,7 +50,7 @@ textarea {
   left: 24px;
   z-index: 30;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 16px;
   width: min(340px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
@@ -67,6 +61,39 @@ textarea {
   pointer-events: none;
   transform: translateX(calc(-100% - 32px));
   transition: opacity 160ms ease, transform 180ms ease;
+}
+
+.account-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f7fbf8;
+}
+
+.account-row span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-row button {
+  min-height: 36px;
+  padding: 0 12px;
+  background: #edf4ef;
+  color: var(--primary-strong);
+  font-size: 0.86rem;
+}
+
+.account-row button:hover {
+  background: #dfeee8;
 }
 
 .is-shelf-open .bookshelf {
@@ -195,10 +222,129 @@ textarea {
   align-content: start;
   gap: 12px;
   min-height: 0;
-  max-height: calc(100vh - 142px);
+  max-height: calc(100vh - 200px);
   overflow: auto;
   padding-right: 2px;
   overscroll-behavior: contain;
+}
+
+.login-body {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-shell {
+  width: min(420px, 100%);
+}
+
+.login-panel {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.login-kicker,
+.login-panel h1,
+.login-hint,
+.login-error {
+  margin: 0;
+}
+
+.login-kicker {
+  color: var(--primary-strong);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.login-panel h1 {
+  font-size: 1.65rem;
+  line-height: 1.15;
+}
+
+.login-hint,
+.login-error {
+  font-size: 0.95rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.login-hint {
+  color: var(--muted);
+}
+
+.login-error {
+  color: #9f2438;
+}
+
+.login-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.local-login {
+  display: grid;
+  gap: 12px;
+}
+
+.local-login label {
+  display: grid;
+  gap: 6px;
+}
+
+.local-login span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.local-login input {
+  min-height: 44px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+}
+
+.local-login input:focus {
+  border-color: var(--primary);
+  outline: 3px solid rgba(31, 122, 106, 0.22);
+}
+
+.local-login button {
+  width: 100%;
+}
+
+.login-button {
+  display: grid;
+  min-height: 48px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.login-button:hover {
+  border-color: rgba(31, 122, 106, 0.34);
+  background: #f7fbf8;
+}
+
+.login-button.is-disabled {
+  pointer-events: none;
+  opacity: 0.48;
 }
 
 .book-card {
@@ -464,62 +610,17 @@ button:disabled {
   accent-color: var(--accent);
 }
 
-.editor {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 14px;
-  padding: 20px;
-  border-radius: 8px;
-}
-
-.editor[hidden] {
-  display: none;
-}
-
-.editor-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.editor h1 {
-  margin: 0;
-  font-size: 1.25rem;
-}
-
-#saveStatus {
-  min-height: 1.2em;
+#playbackStatus {
+  grid-column: 1 / -1;
   margin: 0;
   color: var(--muted);
   font-size: 0.92rem;
   font-weight: 700;
-  text-align: right;
-}
-
-#pageContent {
-  width: 100%;
-  min-height: 280px;
-  resize: none;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 14px;
-  color: var(--ink);
-  background: #fffdf8;
-  line-height: 1.6;
-}
-
-#pageContent:focus {
-  outline: 3px solid rgba(31, 122, 106, 0.22);
-  border-color: var(--primary);
-}
-
-#saveButton {
-  width: 100%;
+  min-height: 1.2em;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
-  .is-editing .reader-shell,
   .reader-shell {
     grid-template-columns: 1fr;
     padding: 14px;
@@ -547,11 +648,6 @@ button:disabled {
 }
 
 @media (max-width: 520px) {
-  .editor-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .bookshelf-toggle {
     top: 10px;
     left: 10px;

@@ -1,21 +1,20 @@
 import { createServer } from "node:http";
-import { cp, mkdir, mkdtemp, readdir, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { execFile } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { createAuth } from "./auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
 const booksDir = path.join(__dirname, "books");
 const port = Number(process.env.PORT || 3000);
 const execFileAsync = promisify(execFile);
-const defaultTtsModel = "tts_models/multilingual/multi-dataset/xtts_v2";
-const defaultTtsLanguage = "en";
-const defaultAudioConvertCommand = process.env.AUDIO_CONVERT_COMMAND || "ffmpeg";
 const maxBookUploadSize = 50 * 1024 * 1024;
+const auth = createAuth({ baseDir: __dirname });
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -92,17 +91,6 @@ function resolveInside(root, requestPath) {
     return null;
   }
   return resolved;
-}
-
-async function readRequestBody(req) {
-  const chunks = [];
-  for await (const chunk of req) {
-    chunks.push(chunk);
-    if (Buffer.concat(chunks).byteLength > 1_000_000) {
-      throw new Error("Request body is too large.");
-    }
-  }
-  return Buffer.concat(chunks).toString("utf8");
 }
 
 async function readBinaryRequestBody(req, maxSize) {
@@ -222,16 +210,6 @@ async function saveBook(bookPath, book) {
   const tmpPath = `${bookPath}.tmp`;
   await writeFile(tmpPath, `${JSON.stringify(book, null, 2)}\n`, "utf8");
   await rename(tmpPath, bookPath);
-}
-
-async function removeIfExists(filePath) {
-  try {
-    await unlink(filePath);
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      throw error;
-    }
-  }
 }
 
 function validateZipEntries(entries) {
@@ -471,148 +449,6 @@ async function handleBookUpload(req, res) {
   return true;
 }
 
-function audioFilePath(bookId, page) {
-  const audioPath = page.audio?.path;
-  if (!audioPath) {
-    throw new Error("Page has no audio path.");
-  }
-
-  const normalizedAudioPath = audioPath.replace(/^\.\//, "");
-  const resolved = normalizedAudioPath.startsWith("books/")
-    ? path.resolve(__dirname, normalizedAudioPath)
-    : path.resolve(booksDir, bookId, normalizedAudioPath);
-  if (!resolved.startsWith(booksDir)) {
-    throw new Error("Audio path is outside the books folder.");
-  }
-  return resolved;
-}
-
-async function resolveLocalPath(bookId, configuredPath) {
-  if (!configuredPath) {
-    return null;
-  }
-
-  if (path.isAbsolute(configuredPath)) {
-    return configuredPath;
-  }
-
-  const normalizedPath = configuredPath.replace(/^\.\//, "");
-  const candidates = [
-    path.resolve(booksDir, bookId, normalizedPath),
-    path.resolve(__dirname, normalizedPath)
-  ];
-
-  for (const candidate of candidates) {
-    try {
-      await stat(candidate);
-      return candidate;
-    } catch (error) {
-      if (error.code !== "ENOENT") {
-        throw error;
-      }
-    }
-  }
-
-  return candidates[0];
-}
-
-function ttsSettings(book) {
-  const bookTts = book.tts || {};
-  return {
-    provider: process.env.TTS_PROVIDER || bookTts.provider || "macos_say",
-    speakerMp3: process.env.TTS_SPEAKER_MP3 || bookTts.speaker_mp3 || "",
-    language: process.env.TTS_LANGUAGE || bookTts.language || defaultTtsLanguage,
-    model: process.env.TTS_MODEL || bookTts.model || defaultTtsModel,
-    command: process.env.TTS_COMMAND || bookTts.command || "tts",
-    macosVoice: process.env.MACOS_TTS_VOICE || bookTts.macos_voice || "Samantha"
-  };
-}
-
-async function convertToReaderMp3(inputPath, outputPath) {
-  await execFileAsync(defaultAudioConvertCommand, ["-y", "-i", inputPath, "-ac", "1", "-ar", "24000", "-codec:a", "libmp3lame", "-b:a", "96k", outputPath], {
-    timeout: 120_000,
-    maxBuffer: 1024 * 1024
-  });
-}
-
-async function synthesizeWithMacosSay(text, tmpAiff, tmpMp3, targetPath, page, settings) {
-  if (process.platform !== "darwin") {
-    throw new Error("macos_say TTS requires macOS. Set TTS_PROVIDER=coqui_xtts_v2 in Docker.");
-  }
-
-  await execFileAsync("/usr/bin/say", ["-v", settings.macosVoice, "-o", tmpAiff, text], {
-    timeout: 120_000,
-    maxBuffer: 1024 * 1024
-  });
-  await convertToReaderMp3(tmpAiff, tmpMp3);
-  await rename(tmpMp3, targetPath);
-
-  page.audio.provider = "macos_say";
-  page.audio.voice = settings.macosVoice;
-  page.audio.model = "macOS say";
-  page.audio.content_type = "audio/mpeg";
-}
-
-async function synthesizeWithCoquiXtts(bookId, text, tmpRawAudio, tmpMp3, targetPath, page, settings) {
-  const speakerMp3 = await resolveLocalPath(bookId, settings.speakerMp3);
-  if (!speakerMp3) {
-    throw new Error("TTS speaker_mp3 is required for coqui_xtts_v2.");
-  }
-
-  await stat(speakerMp3);
-  await execFileAsync(
-    settings.command,
-    [
-      "--model_name",
-      settings.model,
-      "--text",
-      text,
-      "--speaker_wav",
-      speakerMp3,
-      "--language_idx",
-      settings.language,
-      "--out_path",
-      tmpRawAudio
-    ],
-    {
-      timeout: 600_000,
-      maxBuffer: 1024 * 1024 * 10
-    }
-  );
-  await convertToReaderMp3(tmpRawAudio, tmpMp3);
-  await rename(tmpMp3, targetPath);
-
-  page.audio.provider = "coqui_xtts_v2";
-  page.audio.voice = path.basename(speakerMp3);
-  page.audio.speaker_mp3 = path.relative(path.join(booksDir, bookId), speakerMp3);
-  page.audio.language = settings.language;
-  page.audio.model = settings.model;
-  page.audio.content_type = "audio/mpeg";
-}
-
-async function synthesizeVoice(bookId, text, page, book) {
-  const targetPath = audioFilePath(bookId, page);
-  const tmpBase = `${targetPath}.${Date.now()}`;
-  const tmpAiff = `${tmpBase}.aiff`;
-  const tmpRawAudio = `${tmpBase}.raw.mp3`;
-  const tmpMp3 = `${tmpBase}.mp3`;
-  const settings = ttsSettings(book);
-
-  try {
-    if (settings.provider === "coqui_xtts_v2") {
-      await synthesizeWithCoquiXtts(bookId, text, tmpRawAudio, tmpMp3, targetPath, page, settings);
-    } else if (settings.provider === "macos_say") {
-      await synthesizeWithMacosSay(text, tmpAiff, tmpMp3, targetPath, page, settings);
-    } else {
-      throw new Error(`Unsupported TTS provider: ${settings.provider}`);
-    }
-  } finally {
-    await removeIfExists(tmpAiff);
-    await removeIfExists(tmpRawAudio);
-    await removeIfExists(tmpMp3);
-  }
-}
-
 async function handleApi(req, res) {
   if (req.method === "GET" && req.url.match(/^\/api\/books\/?$/)) {
     sendJson(res, 200, await listBooks());
@@ -620,35 +456,10 @@ async function handleApi(req, res) {
   }
 
   const bookMatch = req.url.match(/^\/api\/books\/([^/?#]+)$/);
-  const pageMatch = req.url.match(/^\/api\/books\/([^/?#]+)\/pages\/(\d+)$/);
 
   if (req.method === "GET" && bookMatch) {
     const { book } = await loadBook(bookMatch[1]);
     sendJson(res, 200, book);
-    return true;
-  }
-
-  if (req.method === "PATCH" && pageMatch) {
-    const bookId = pageMatch[1];
-    const pageNumber = Number(pageMatch[2]);
-    const body = JSON.parse(await readRequestBody(req));
-
-    if (typeof body.content !== "string") {
-      sendJson(res, 400, { error: "Expected a string content field." });
-      return true;
-    }
-
-    const { book, bookPath } = await loadBook(bookId);
-    const page = book.pages.find((candidate) => candidate.page_number === pageNumber);
-    if (!page) {
-      sendJson(res, 404, { error: "Page not found." });
-      return true;
-    }
-
-    page.content = body.content;
-    await synthesizeVoice(bookId, body.content, page, book);
-    await saveBook(bookPath, book);
-    sendJson(res, 200, { ok: true, page, audioUpdatedAt: Date.now() });
     return true;
   }
 
@@ -682,6 +493,27 @@ async function serveStatic(req, res) {
 
 const server = createServer(async (req, res) => {
   try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const isPublicStyle = req.method === "GET" && url.pathname === "/styles.css";
+    const isAdminBookPost = req.method === "POST" && url.pathname.startsWith("/books/");
+
+    if (req.method === "GET" && url.pathname === "/healthz") {
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    if (await auth.handleAuth(req, res)) {
+      return;
+    }
+
+    if (isAdminBookPost && !(await auth.requireAdmin(req, res))) {
+      return;
+    }
+
+    if (!isPublicStyle && !isAdminBookPost && !auth.requireAuth(req, res)) {
+      return;
+    }
+
     if (req.url.startsWith("/books/") && (await handleBookUpload(req, res))) {
       return;
     }

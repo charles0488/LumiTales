@@ -25,6 +25,10 @@
           <p id="bookShelfCount"></p>
           <button id="bookshelfClose" class="bookshelf-close" type="button" aria-label="Close bookshelf">×</button>
         </div>
+        <form id="logoutForm" class="account-row" action="/logout" method="post">
+          <span id="accountName">Signed in</span>
+          <button type="submit">Sign out</button>
+        </form>
         <div id="bookShelf" class="book-grid" aria-live="polite"></div>
       </aside>
 
@@ -49,20 +53,12 @@
               <input id="autoAdvance" type="checkbox" checked>
               Auto
             </label>
+            <p id="playbackStatus" role="status"></p>
           </div>
         </div>
 
         <audio id="audioPlayer" preload="auto"></audio>
       </section>
-
-      <aside id="pageEditor" class="editor" aria-label="Page editor" hidden>
-        <div class="editor-heading">
-          <h1>Page Text</h1>
-          <p id="saveStatus" role="status"></p>
-        </div>
-        <textarea id="pageContent" spellcheck="true"></textarea>
-        <button id="saveButton" type="button">Save Page</button>
-      </aside>
     </main>
 
     <script src="/app.js" type="module"></script>

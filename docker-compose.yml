@@ -4,18 +4,21 @@ services:
     ports:
       - "3000:3000"
     environment:
-      TTS_PROVIDER: coqui_xtts_v2
-      TTS_SPEAKER_MP3: /app/voices/satisfaction.mp3
-      TTS_LANGUAGE: en
-      TTS_MODEL: tts_models/multilingual/multi-dataset/xtts_v2
-      # Set to "1" after reviewing and accepting the XTTS model license.
-      # COQUI_TOS_AGREED: "1"
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in your shell or .env file}
+      LOCAL_AUTH_ENABLED: ${LOCAL_AUTH_ENABLED:-1}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
     volumes:
       - livbookreader-books:/app/books
-      - ./voices:/app/voices:ro
-      - livbookreader-tts-cache:/models
+      - livbookreader-data:/app/data
 
 volumes:
   livbookreader-books:
     name: livbookreader-books
-  livbookreader-tts-cache:
+  livbookreader-data:
+    name: livbookreader-data

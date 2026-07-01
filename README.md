@@ -1,6 +1,6 @@
 # LivBookReader
 
-A local web reader for illustrated books with synchronized page audio and editable page text.
+A local web reader for illustrated books with synchronized page audio.
 
 ## Run
 
@@ -20,9 +20,82 @@ For network access from another device on the same LAN, use the host machine's I
 http://<your-lan-ip>:3000/
 ```
 
+## Authentication
+
+The reader requires sign-in before serving the app, book APIs, uploaded book files, images, or audio. Local email/password sign-in is enabled by default. Google and Apple sign-in use server-side OpenID Connect with signed session cookies.
+
+Set a stable session secret and the public URL users open in their browser:
+
+```sh
+export SESSION_SECRET="replace-with-a-long-random-secret"
+export PUBLIC_BASE_URL="http://localhost:3000"
+```
+
+For local sign-in, open `/login` and enter a username or email plus password. The first user account in an empty auth database is assigned the `admin` role; later accounts are assigned the `user` role. Passwords are stored as salted `scrypt` hashes in `data/users.sqlite3`.
+
+To disable local sign-in:
+
+```sh
+export LOCAL_AUTH_ENABLED=0
+```
+
+For Google sign-in, create an OAuth 2.0 web client in Google Cloud and add this authorized redirect URI:
+
+```text
+http://localhost:3000/auth/google/callback
+```
+
+Then set:
+
+```sh
+export GOOGLE_CLIENT_ID="..."
+export GOOGLE_CLIENT_SECRET="..."
+```
+
+For Apple sign-in, configure a Services ID for web sign-in in Apple Developer and add this return URL:
+
+```text
+https://your-domain.example/auth/apple/callback
+```
+
+Then create a Sign in with Apple private key and set:
+
+```sh
+export APPLE_CLIENT_ID="com.example.your-services-id"
+export APPLE_TEAM_ID="..."
+export APPLE_KEY_ID="..."
+export APPLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+```
+
+Apple web sign-in normally requires a verified HTTPS domain, so use your deployed HTTPS URL for `PUBLIC_BASE_URL` and the Apple return URL.
+
+Authenticated users and roles are stored in `data/users.sqlite3`. Set `AUTH_DATA_DIR` to use a different directory. If a legacy `data/users.json` file exists and the SQLite database is empty, the app imports those users on startup and makes the first imported user an admin. Sessions are stored in memory and are cleared when the server restarts.
+
+Book uploads with `POST /books/:id` require the `admin` role. Authenticated users can read book files under `/books/...`.
+
+Admins can create API tokens for scripted uploads:
+
+```sh
+curl -c cookies.txt -X POST "http://localhost:3000/auth/local" \
+  --data-urlencode "email=adminuser" \
+  --data-urlencode "password=admin-password" \
+  --data-urlencode "returnTo=/"
+
+curl -b cookies.txt -X POST "http://localhost:3000/api/admin/tokens" \
+  --data-urlencode "name=upload script"
+```
+
+The token is returned once. Use it as a bearer token for admin-only uploads:
+
+```sh
+curl -X POST "http://localhost:3000/books/my_new_book" \
+  -H "Authorization: Bearer livbook_..." \
+  -F "file=@/path/to/book.zip"
+```
+
 ## Docker
 
-Build and run the reader with Coqui XTTS custom voice generation:
+Build and run the reader:
 
 ```sh
 docker compose up --build
@@ -42,19 +115,29 @@ docker-compose build
 docker-compose up
 ```
 
+Configure Docker through environment variables or a `.env` file:
+
+```sh
+SESSION_SECRET=replace-with-a-long-random-secret
+PUBLIC_BASE_URL=http://localhost:3000
+LOCAL_AUTH_ENABLED=1
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+APPLE_CLIENT_ID=...
+APPLE_TEAM_ID=...
+APPLE_KEY_ID=...
+APPLE_PRIVATE_KEY=...
+```
+
 If Compose is not installed, use plain Docker:
 
 ```sh
 docker build -t liv-book-reader .
 docker run --rm -it \
   -p 3000:3000 \
-  -e TTS_PROVIDER=coqui_xtts_v2 \
-  -e TTS_SPEAKER_MP3=/app/voices/satisfaction.mp3 \
-  -e TTS_LANGUAGE=en \
-  -e TTS_MODEL=tts_models/multilingual/multi-dataset/xtts_v2 \
-  -v livbookreader-books:/app/books \
-  -v livbookreader-tts-cache:/models \
-  liv-book-reader
+    -v livbookreader-books:/app/books \
+    -v livbookreader-data:/app/data \
+    liv-book-reader
 ```
 
 Then open:
@@ -63,24 +146,15 @@ Then open:
 http://localhost:3000/
 ```
 
-The image includes the current `voices/` folder, including `voices/satisfaction.mp3` at `/app/voices/satisfaction.mp3`. Docker stores `/app/books` in the named `livbookreader-books` volume, so uploaded books and edited page files survive container rebuilds and image updates. New books should be added through the app or copied into the Docker volume. The compose file still mounts local `voices/` read-only so you can change reference MP3 files without rebuilding the image. By default, edited pages are regenerated with:
-
-```text
-voices/satisfaction.mp3
-```
-
-Change `TTS_SPEAKER_MP3` in `docker-compose.yml` to use another mounted reference MP3, such as `/app/voices/king_love.mp3` or `/app/voices/groovy.mp3`.
+Docker stores `/app/books` in the named `livbookreader-books` volume and `/app/data` in the named `livbookreader-data` volume, so uploaded books and known users survive container rebuilds and image updates. New books should be added through the app or copied into the Docker volume.
 
 To use local folders instead of the named Docker volumes when using plain Docker, replace the volume flags with:
 
 ```sh
--v "$PWD/books:/app/books" \
--v "$PWD/voices:/app/voices:ro"
+-v "$PWD/books:/app/books"
 ```
 
 To inspect or back up the persistent books data, use the `livbookreader-books` Docker volume.
-
-If XTTS asks for model license confirmation, review the license and then set `COQUI_TOS_AGREED: "1"` in `docker-compose.yml`.
 
 ## Features
 
@@ -90,32 +164,3 @@ If XTTS asks for model license confirmation, review the license and then set `CO
 - Plays each page's MP3 narration.
 - Auto-advances after audio ends.
 - Supports manual previous/next page controls.
-- Lets users edit page text.
-- Regenerates and overwrites the page MP3 after saving edited text.
-
-## Notes
-
-Voice regeneration defaults to the macOS `say` command with the `Samantha` voice and converts output to 24 kHz MP3 using `ffmpeg`. Docker runs should use `TTS_PROVIDER=coqui_xtts_v2`; Linux containers do not include macOS `say`.
-
-To generate edited page audio from a custom reference voice MP3, install the Coqui TTS CLI and run with XTTS settings:
-
-```sh
-TTS_PROVIDER=coqui_xtts_v2 \
-TTS_SPEAKER_MP3=/absolute/path/to/custom_voice.mp3 \
-node server.js
-```
-
-You can also configure a book directly in `book.json`:
-
-```json
-{
-  "tts": {
-    "provider": "coqui_xtts_v2",
-    "speaker_mp3": "voices/custom_voice.mp3",
-    "language": "en",
-    "model": "tts_models/multilingual/multi-dataset/xtts_v2"
-  }
-}
-```
-
-For local setup differences, `TTS_COMMAND`, `TTS_MODEL`, `TTS_LANGUAGE`, and `MACOS_TTS_VOICE` can be provided as environment variables.
