@@ -15,20 +15,12 @@ const elements = {
   play: document.querySelector("#playButton"),
   next: document.querySelector("#nextButton"),
   autoAdvance: document.querySelector("#autoAdvance"),
+  askQuestions: document.querySelector("#askQuestions"),
   status: document.querySelector("#playbackStatus"),
-  questionDialog: document.querySelector("#questionDialog"),
-  questionDialogTitle: document.querySelector("#questionDialogTitle"),
-  questionDialogMessage: document.querySelector("#questionDialogMessage"),
-  questionConfirm: document.querySelector("#questionConfirm"),
-  questionCancel: document.querySelector("#questionCancel"),
   accountName: document.querySelector("#accountName")
 };
 
 const questionDelayMs = 30000;
-const fallbackQuestionPrompts = {
-  before_reading: "I have a few questions for you. Are you ready for the questions?",
-  after_reading: "Now, this is the end of the story. Are you ready for a few questions?"
-};
 
 let books = [];
 let book;
@@ -43,7 +35,6 @@ let playbackCursor = 0;
 let activePlaybackItem = null;
 let playbackDelayTimer;
 let queueCompletion;
-let questionDialogKind = null;
 let playedBeforeReadingQuestions = false;
 let playedAfterReadingQuestions = false;
 
@@ -69,6 +60,11 @@ function questionAudioPath(question) {
   return assetPath(question.audio);
 }
 
+function questionPromptAudio(kind) {
+  const section = questionSection(kind);
+  return Array.isArray(section) ? null : section?.prompt?.audio;
+}
+
 function currentPage() {
   return book.pages[currentIndex];
 }
@@ -83,21 +79,6 @@ function questionsFor(kind) {
   return (questions || []).filter((question) => question?.audio?.path);
 }
 
-function promptFor(kind) {
-  const section = questionSection(kind);
-  if (Array.isArray(section)) {
-    return {
-      text: fallbackQuestionPrompts[kind],
-      audio: null
-    };
-  }
-
-  return {
-    text: section?.prompt?.text || fallbackQuestionPrompts[kind],
-    audio: section?.prompt?.audio || null
-  };
-}
-
 function clearPlaybackQueue() {
   window.clearTimeout(playbackDelayTimer);
   playbackDelayTimer = null;
@@ -105,50 +86,6 @@ function clearPlaybackQueue() {
   playbackQueue = [];
   playbackCursor = 0;
   activePlaybackItem = null;
-}
-
-async function speakPrompt(prompt) {
-  if (!prompt.audio?.path) {
-    return;
-  }
-
-  activePlaybackItem = { type: "prompt" };
-  elements.audio.src = assetPath(prompt.audio);
-  try {
-    elements.audio.currentTime = 0;
-    await elements.audio.play();
-  } catch {
-    setStatus("Press Yes when ready");
-  }
-}
-
-function showQuestionDialog(kind) {
-  const questions = questionsFor(kind);
-  if (questions.length === 0) {
-    return false;
-  }
-
-  const prompt = promptFor(kind);
-  questionDialogKind = kind;
-  isReading = false;
-  elements.questionDialogTitle.textContent = "Ready for questions?";
-  elements.questionDialogMessage.textContent = prompt.text;
-  elements.questionDialog.hidden = false;
-  setPlaybackPaneVisible(true);
-  updateNavigation();
-  speakPrompt(prompt);
-  elements.questionConfirm.focus();
-  return true;
-}
-
-function hideQuestionDialog() {
-  questionDialogKind = null;
-  elements.questionDialog.hidden = true;
-  if (activePlaybackItem?.type === "prompt") {
-    elements.audio.pause();
-    elements.audio.currentTime = 0;
-    activePlaybackItem = null;
-  }
 }
 
 function setStatus(message) {
@@ -301,7 +238,9 @@ async function playNextQueuedAudio() {
     return;
   }
 
-  if (activePlaybackItem.type === "question") {
+  if (activePlaybackItem.type === "prompt") {
+    elements.audio.src = assetPath(activePlaybackItem.audio);
+  } else if (activePlaybackItem.type === "question") {
     elements.audio.src = questionAudioPath(activePlaybackItem.question);
   } else if (activePlaybackItem.type === "delay") {
     isReading = true;
@@ -346,7 +285,15 @@ function completePlaybackQueue() {
 }
 
 function questionPlaybackQueue(kind) {
-  return questionsFor(kind).flatMap((question, index, questions) => {
+  const questions = questionsFor(kind);
+  if (questions.length === 0) {
+    return [];
+  }
+
+  const promptAudio = questionPromptAudio(kind);
+  const queue = promptAudio?.path ? [{ type: "prompt", kind, audio: promptAudio }] : [];
+
+  queue.push(...questions.flatMap((question, index) => {
     const item = {
       type: "question",
       kind,
@@ -357,21 +304,22 @@ function questionPlaybackQueue(kind) {
       return [item];
     }
 
-    return [item, { type: "delay", duration: questionDelayMs }];
-  });
+    return [item, { type: "delay", kind, duration: questionDelayMs }];
+  }));
+
+  return queue;
 }
 
 function startQuestionPlayback(kind) {
-  hideQuestionDialog();
   const queue = questionPlaybackQueue(kind);
   if (queue.length === 0) {
-    completeQuestionFlow(kind);
-    return;
+    return false;
   }
 
   playQueuedAudio(queue, {
     onComplete: () => completeQuestionFlow(kind)
   });
+  return true;
 }
 
 function completeQuestionFlow(kind) {
@@ -384,7 +332,9 @@ function completeQuestionFlow(kind) {
 }
 
 function skipQuestionPlayback(kind) {
-  hideQuestionDialog();
+  elements.audio.pause();
+  window.clearTimeout(playbackDelayTimer);
+  playbackDelayTimer = null;
   completeQuestionFlow(kind);
 }
 
@@ -407,7 +357,6 @@ function goPrevious(options = {}) {
 async function selectBook(nextBookId, { updateUrl = true } = {}) {
   pauseAudio();
   clearPlaybackQueue();
-  hideQuestionDialog();
   bookId = nextBookId;
   book = null;
   currentIndex = 0;
@@ -461,15 +410,13 @@ elements.play.addEventListener("click", () => {
   }
 });
 
-elements.questionConfirm.addEventListener("click", () => {
-  if (questionDialogKind) {
-    startQuestionPlayback(questionDialogKind);
-  }
-});
+elements.askQuestions.addEventListener("change", () => {
+  const questionKind = ["prompt", "question", "delay"].includes(activePlaybackItem?.type)
+    ? activePlaybackItem.kind
+    : null;
 
-elements.questionCancel.addEventListener("click", () => {
-  if (questionDialogKind) {
-    skipQuestionPlayback(questionDialogKind);
+  if (!elements.askQuestions.checked && questionKind) {
+    skipQuestionPlayback(questionKind);
   }
 });
 
@@ -493,18 +440,18 @@ elements.audio.addEventListener("ended", () => {
     return;
   }
 
-  if (currentIndex === 0 && !playedBeforeReadingQuestions) {
+  if (currentIndex === 0 && !playedBeforeReadingQuestions && elements.askQuestions.checked) {
     playedBeforeReadingQuestions = true;
-    if (showQuestionDialog("before_reading")) {
+    if (startQuestionPlayback("before_reading")) {
       return;
     }
   }
 
   if (elements.autoAdvance.checked && currentIndex < book.pages.length - 1) {
     goNext({ playAudio: true });
-  } else if (currentIndex === book.pages.length - 1 && !playedAfterReadingQuestions) {
+  } else if (currentIndex === book.pages.length - 1 && !playedAfterReadingQuestions && elements.askQuestions.checked) {
     playedAfterReadingQuestions = true;
-    if (showQuestionDialog("after_reading")) {
+    if (startQuestionPlayback("after_reading")) {
       return;
     }
     stopPlayback();
@@ -514,11 +461,24 @@ elements.audio.addEventListener("ended", () => {
 });
 
 elements.imageFrame.addEventListener("click", (event) => {
-  if (!isReading || event.target.closest(".playback-pane")) {
+  if (
+    isPlaybackPaneVisible ||
+    event.target.closest(".playback-pane") ||
+    event.target.closest(".bookshelf-toggle, .book-meta")
+  ) {
     return;
   }
 
   setPlaybackPaneVisible(true);
+  event.stopPropagation();
+});
+
+document.addEventListener("click", (event) => {
+  if (!isPlaybackPaneVisible || event.target.closest(".playback-pane")) {
+    return;
+  }
+
+  setPlaybackPaneVisible(false);
 });
 
 elements.shelfToggle.addEventListener("click", () => {
@@ -534,13 +494,6 @@ elements.shelfScrim.addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (questionDialogKind) {
-    if (event.key === "Escape") {
-      skipQuestionPlayback(questionDialogKind);
-    }
-    return;
-  }
-
   if (event.key === "Escape" && isShelfOpen) {
     setShelfOpen(false);
     elements.shelfToggle.focus();

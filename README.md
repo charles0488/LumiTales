@@ -31,7 +31,37 @@ export SESSION_SECRET="replace-with-a-long-random-secret"
 export PUBLIC_BASE_URL="http://localhost:3000"
 ```
 
-For local sign-in, open `/login` and enter a username or email plus password. The first user account in an empty auth database is assigned the `admin` role; later accounts are assigned the `user` role. Passwords are stored as salted `scrypt` hashes in `data/users.sqlite3`.
+For local sign-in, open `/signup` to create an account with an email address and password. The app sends a confirmation link, and users must confirm their email before signing in at `/login`. The first created account in an empty auth database is assigned the `admin` role; later accounts are assigned the `user` role. Passwords are stored as salted `scrypt` hashes in `data/users.sqlite3`.
+
+By default, confirmation and password reset emails are printed to the server console for local development. For real delivery, configure one of these email senders.
+
+Resend API:
+
+```sh
+export RESEND_API_KEY="re_..."
+export AUTH_EMAIL_FROM="LivBookReader <no-reply@your-domain.example>"
+```
+
+SMTP:
+
+```sh
+export SMTP_HOST="smtp.example.com"
+export SMTP_PORT=587
+export SMTP_USER="smtp-user"
+export SMTP_PASS="smtp-password"
+export AUTH_EMAIL_FROM="LivBookReader <no-reply@your-domain.example>"
+```
+
+Use `SMTP_SECURE=1` for implicit TLS, usually port 465. Set `SMTP_STARTTLS=0` only for SMTP servers that do not support STARTTLS.
+
+Local sendmail-compatible command:
+
+```sh
+export SENDMAIL_PATH="/usr/sbin/sendmail"
+export AUTH_EMAIL_FROM="LivBookReader <no-reply@example.com>"
+```
+
+Users can request a password reset at `/forgot-password`.
 
 To disable local sign-in:
 
@@ -77,7 +107,7 @@ Admins can create API tokens for scripted uploads:
 
 ```sh
 curl -c cookies.txt -X POST "http://localhost:3000/auth/local" \
-  --data-urlencode "email=adminuser" \
+  --data-urlencode "email=admin@example.com" \
   --data-urlencode "password=admin-password" \
   --data-urlencode "returnTo=/"
 

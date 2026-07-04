@@ -1,7 +1,9 @@
 import { createHash, createHmac, createPublicKey, createSign, createVerify, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { mkdir, readFile } from "node:fs/promises";
+import net from "node:net";
 import path from "node:path";
+import tls from "node:tls";
 import { promisify } from "node:util";
 
 const sessionCookieName = "livbook_session";
@@ -9,6 +11,8 @@ const oauthCookieName = "livbook_oauth";
 const sessionTtlMs = 1000 * 60 * 60 * 24 * 14;
 const oauthStateTtlMs = 1000 * 60 * 10;
 const jwksTtlMs = 1000 * 60 * 60;
+const emailConfirmationTtlMs = 1000 * 60 * 60 * 24;
+const passwordResetTtlMs = 1000 * 60 * 30;
 const maxBodyBytes = 1024 * 1024;
 const scryptAsync = promisify(scrypt);
 const execFileAsync = promisify(execFile);
@@ -110,6 +114,29 @@ function tokenHash(token) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+function emailAddress(value) {
+  const match = String(value || "").match(/<([^<>]+)>/);
+  return (match?.[1] || value || "").trim();
+}
+
+function escapeMailHeader(value) {
+  return String(value || "").replace(/[\r\n]+/g, " ").trim();
+}
+
+function smtpEncodeMessage({ from, to, subject, text }) {
+  const body = String(text || "").replace(/\r?\n/g, "\r\n").replace(/^\./gm, "..");
+  return [
+    `From: ${escapeMailHeader(from)}`,
+    `To: ${escapeMailHeader(to)}`,
+    `Subject: ${escapeMailHeader(subject)}`,
+    "MIME-Version: 1.0",
+    "Content-Type: text/plain; charset=utf-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    body
+  ].join("\r\n");
+}
+
 function signCookie(secret, value) {
   return `${value}.${signValue(secret, value)}`;
 }
@@ -163,6 +190,23 @@ function validateLocalCredentials(login, password) {
   }
   if (password.length < 8) {
     throw new Error("Password must be at least 8 characters.");
+  }
+}
+
+function validateEmail(value) {
+  const email = normalizeLogin(value);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Enter a valid email address.");
+  }
+  return email;
+}
+
+function validateNewPassword(password, confirmation = password) {
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters.");
+  }
+  if (password !== confirmation) {
+    throw new Error("Passwords do not match.");
   }
 }
 
@@ -359,6 +403,16 @@ export function createAuth({ baseDir }) {
   const dataDir = process.env.AUTH_DATA_DIR || path.join(baseDir, "data");
   const usersDbPath = path.join(dataDir, "users.sqlite3");
   const legacyUsersPath = path.join(dataDir, "users.json");
+  const sendmailPath = process.env.SENDMAIL_PATH || "";
+  const mailFrom = process.env.AUTH_EMAIL_FROM || "LivBookReader <no-reply@livbookreader.local>";
+  const resendApiKey = process.env.RESEND_API_KEY || "";
+  const resendApiUrl = process.env.RESEND_API_URL || "https://api.resend.com/emails";
+  const smtpHost = process.env.SMTP_HOST || "";
+  const smtpPort = Number(process.env.SMTP_PORT || 587);
+  const smtpUser = process.env.SMTP_USER || "";
+  const smtpPass = process.env.SMTP_PASS || "";
+  const smtpSecure = process.env.SMTP_SECURE === "1" || process.env.SMTP_SECURE === "true";
+  const smtpStartTls = process.env.SMTP_STARTTLS !== "0";
   const sessions = new Map();
   const oauthStates = new Map();
   const jwksCache = new Map();
@@ -401,6 +455,249 @@ export function createAuth({ baseDir }) {
 
     const proto = req.headers["x-forwarded-proto"] || "http";
     return `${proto}://${req.headers.host}`;
+  }
+
+  async function deliverAuthEmail({ to, subject, text }) {
+    if (resendApiKey) {
+      await sendResendEmail({ to, subject, text });
+      return;
+    }
+
+    if (smtpHost) {
+      await sendSmtpEmail({ to, subject, text });
+      return;
+    }
+
+    if (sendmailPath) {
+      await new Promise((resolve, reject) => {
+        const child = spawn(sendmailPath, ["-t"], { stdio: ["pipe", "ignore", "pipe"] });
+        const errors = [];
+        child.stderr.on("data", (chunk) => errors.push(chunk));
+        child.on("error", reject);
+        child.on("close", (code) => {
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(new Error(`sendmail exited with code ${code}: ${Buffer.concat(errors).toString("utf8")}`));
+          }
+        });
+        child.stdin.end([
+          `From: ${mailFrom}`,
+          `To: ${to}`,
+          `Subject: ${subject}`,
+          "",
+          text
+        ].join("\n"));
+      });
+      return;
+    }
+
+    console.warn(`[auth email] To: ${to}\n[auth email] Subject: ${subject}\n${text}`);
+  }
+
+  async function sendResendEmail({ to, subject, text }) {
+    const response = await fetch(resendApiUrl, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${resendApiKey}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        from: mailFrom,
+        to: [to],
+        subject,
+        text
+      })
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Email API failed with HTTP ${response.status}: ${body}`);
+    }
+  }
+
+  async function sendSmtpEmail({ to, subject, text }) {
+    const socket = await openSmtpSocket();
+    const state = {
+      socket,
+      buffer: "",
+      pending: []
+    };
+
+    try {
+      await smtpRead(state, 220);
+      await smtpCommand(state, `EHLO ${smtpClientName()}`, 250);
+
+      if (!smtpSecure && smtpStartTls) {
+        await smtpCommand(state, "STARTTLS", 220);
+        state.socket = tls.connect({
+          socket: state.socket,
+          servername: smtpHost
+        });
+        state.buffer = "";
+        await new Promise((resolve, reject) => {
+          const cleanup = () => {
+            state.socket.off("secureConnect", handleSecureConnect);
+            state.socket.off("error", handleError);
+          };
+          const handleSecureConnect = () => {
+            cleanup();
+            resolve();
+          };
+          const handleError = (error) => {
+            cleanup();
+            reject(error);
+          };
+          state.socket.once("secureConnect", handleSecureConnect);
+          state.socket.once("error", handleError);
+        });
+        await smtpCommand(state, `EHLO ${smtpClientName()}`, 250);
+      }
+
+      if (smtpUser || smtpPass) {
+        await smtpCommand(state, "AUTH LOGIN", 334);
+        await smtpCommand(state, Buffer.from(smtpUser).toString("base64"), 334);
+        await smtpCommand(state, Buffer.from(smtpPass).toString("base64"), 235);
+      }
+
+      await smtpCommand(state, `MAIL FROM:<${emailAddress(mailFrom)}>`, 250);
+      await smtpCommand(state, `RCPT TO:<${emailAddress(to)}>`, [250, 251]);
+      await smtpCommand(state, "DATA", 354);
+      state.socket.write(`${smtpEncodeMessage({ from: mailFrom, to, subject, text })}\r\n.\r\n`);
+      await smtpRead(state, 250);
+      await smtpCommand(state, "QUIT", 221);
+    } finally {
+      state.socket.destroy();
+    }
+  }
+
+  function smtpClientName() {
+    return new URL(configuredBaseUrl || "http://localhost").hostname || "localhost";
+  }
+
+  async function openSmtpSocket() {
+    const options = {
+      host: smtpHost,
+      port: smtpPort,
+      servername: smtpHost
+    };
+
+    return new Promise((resolve, reject) => {
+      const socket = smtpSecure ? tls.connect(options) : net.connect(options);
+      const cleanup = () => {
+        socket.off(smtpSecure ? "secureConnect" : "connect", handleConnect);
+        socket.off("timeout", handleTimeout);
+        socket.off("error", handleError);
+      };
+      const handleConnect = () => {
+        cleanup();
+        resolve(socket);
+      };
+      const handleTimeout = () => {
+        cleanup();
+        socket.destroy();
+        reject(new Error("SMTP connection timed out."));
+      };
+      const handleError = (error) => {
+        cleanup();
+        reject(error);
+      };
+      socket.setTimeout(30_000);
+      socket.once(smtpSecure ? "secureConnect" : "connect", handleConnect);
+      socket.once("timeout", handleTimeout);
+      socket.once("error", handleError);
+    });
+  }
+
+  async function smtpCommand(state, command, expectedCodes) {
+    state.socket.write(`${command}\r\n`);
+    return smtpRead(state, expectedCodes);
+  }
+
+  async function smtpRead(state, expectedCodes) {
+    const accepted = Array.isArray(expectedCodes) ? expectedCodes : [expectedCodes];
+    const response = await smtpReadResponse(state);
+    if (!accepted.includes(response.code)) {
+      throw new Error(`SMTP command failed: ${response.text}`);
+    }
+    return response;
+  }
+
+  async function smtpReadResponse(state) {
+    while (true) {
+      const response = smtpParseResponse(state);
+      if (response) {
+        return response;
+      }
+
+      const chunk = await new Promise((resolve, reject) => {
+        const cleanup = () => {
+          state.socket.off("data", handleData);
+          state.socket.off("error", handleError);
+          state.socket.off("end", handleEnd);
+        };
+        const handleData = (data) => {
+          cleanup();
+          resolve(data);
+        };
+        const handleError = (error) => {
+          cleanup();
+          reject(error);
+        };
+        const handleEnd = () => {
+          cleanup();
+          reject(new Error("SMTP connection closed."));
+        };
+        state.socket.once("data", handleData);
+        state.socket.once("error", handleError);
+        state.socket.once("end", handleEnd);
+      });
+      state.buffer += chunk.toString("utf8");
+    }
+  }
+
+  function smtpParseResponse(state) {
+    const lines = state.buffer.split(/\r?\n/);
+    if (!state.buffer.match(/\r?\n$/)) {
+      state.buffer = lines.pop() || "";
+    } else {
+      state.buffer = "";
+      lines.pop();
+    }
+
+    for (const line of lines) {
+      state.pending.push(line);
+      if (/^\d{3} /.test(line)) {
+        const text = state.pending.join("\n");
+        state.pending = [];
+        return {
+          code: Number(line.slice(0, 3)),
+          text
+        };
+      }
+    }
+
+    return null;
+  }
+
+  async function sendConfirmationEmail(req, user) {
+    const token = await createAuthToken(user.id, "confirm_email", emailConfirmationTtlMs);
+    const confirmUrl = `${baseUrl(req)}/auth/confirm?token=${encodeURIComponent(token)}`;
+    await deliverAuthEmail({
+      to: user.email,
+      subject: "Confirm your LivBookReader email",
+      text: `Confirm your email address to finish signing up:\n\n${confirmUrl}\n\nThis link expires in 24 hours.`
+    });
+  }
+
+  async function sendPasswordResetEmail(req, user) {
+    const token = await createAuthToken(user.id, "password_reset", passwordResetTtlMs);
+    const resetUrl = `${baseUrl(req)}/reset-password?token=${encodeURIComponent(token)}`;
+    await deliverAuthEmail({
+      to: user.email,
+      subject: "Reset your LivBookReader password",
+      text: `Reset your password here:\n\n${resetUrl}\n\nThis link expires in 30 minutes.`
+    });
   }
 
   function providerConfig(provider) {
@@ -506,7 +803,7 @@ export function createAuth({ baseDir }) {
     return false;
   }
 
-  function renderLogin(req, error = "") {
+  function renderLogin(req, error = "", message = "") {
     const session = sessionFromRequest(req);
     if (session) {
       return null;
@@ -522,19 +819,20 @@ export function createAuth({ baseDir }) {
       ? ""
       : "<p class=\"login-hint\">Authentication is enabled, but no provider credentials are configured yet.</p>";
     const errorMessage = error ? `<p class="login-error">${escapeHtml(error)}</p>` : "";
+    const successMessage = message ? `<p class="login-success">${escapeHtml(message)}</p>` : "";
     const localForm = localReady
       ? `<form class="local-login" action="/auth/local" method="post">
           <input type="hidden" name="returnTo" value="${escapeHtml(safeReturnTo)}">
           <label>
-            <span>Username or email</span>
-            <input name="email" type="text" autocomplete="username" required>
+            <span>Email</span>
+            <input name="email" type="email" autocomplete="username" required>
           </label>
           <label>
             <span>Password</span>
             <input name="password" type="password" autocomplete="current-password" required minlength="8">
           </label>
           <button type="submit">Continue</button>
-          <p class="login-hint">Use a local account or a configured sign-in provider.</p>
+          <p class="login-hint"><a href="/signup?returnTo=${encodeURIComponent(safeReturnTo)}">Create an account</a> · <a href="/forgot-password">Forgot password?</a></p>
         </form>`
       : "";
 
@@ -552,12 +850,131 @@ export function createAuth({ baseDir }) {
         <p class="login-kicker">LivBookReader</p>
         <h1 id="loginTitle">Sign in to keep reading</h1>
         ${errorMessage}
+        ${successMessage}
         ${setupMessage}
         ${localForm}
         <div class="login-actions">
           <a class="login-button${googleReady ? "" : " is-disabled"}" href="/auth/google?returnTo=${encodeURIComponent(safeReturnTo)}" aria-disabled="${!googleReady}">Continue with Google</a>
           <a class="login-button${appleReady ? "" : " is-disabled"}" href="/auth/apple?returnTo=${encodeURIComponent(safeReturnTo)}" aria-disabled="${!appleReady}">Continue with Apple</a>
         </div>
+      </section>
+    </main>
+  </body>
+</html>`;
+  }
+
+  function renderSignup(req, error = "", message = "") {
+    const url = new URL(req.url, baseUrl(req));
+    const returnTo = url.searchParams.get("returnTo") || "/";
+    const safeReturnTo = returnTo.startsWith("/") ? returnTo : "/";
+    const errorMessage = error ? `<p class="login-error">${escapeHtml(error)}</p>` : "";
+    const successMessage = message ? `<p class="login-success">${escapeHtml(message)}</p>` : "";
+
+    return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign up - LivBookReader</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="login-body">
+    <main class="login-shell">
+      <section class="login-panel" aria-labelledby="signupTitle">
+        <p class="login-kicker">LivBookReader</p>
+        <h1 id="signupTitle">Create your account</h1>
+        ${errorMessage}
+        ${successMessage}
+        <form class="local-login" action="/auth/signup" method="post">
+          <input type="hidden" name="returnTo" value="${escapeHtml(safeReturnTo)}">
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" autocomplete="email" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" autocomplete="new-password" required minlength="8">
+          </label>
+          <label>
+            <span>Confirm password</span>
+            <input name="confirmPassword" type="password" autocomplete="new-password" required minlength="8">
+          </label>
+          <button type="submit">Sign up</button>
+          <p class="login-hint">Already have an account? <a href="/login?returnTo=${encodeURIComponent(safeReturnTo)}">Sign in</a>.</p>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>`;
+  }
+
+  function renderForgotPassword(req, error = "", message = "") {
+    const errorMessage = error ? `<p class="login-error">${escapeHtml(error)}</p>` : "";
+    const successMessage = message ? `<p class="login-success">${escapeHtml(message)}</p>` : "";
+
+    return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reset password - LivBookReader</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="login-body">
+    <main class="login-shell">
+      <section class="login-panel" aria-labelledby="forgotTitle">
+        <p class="login-kicker">LivBookReader</p>
+        <h1 id="forgotTitle">Reset your password</h1>
+        ${errorMessage}
+        ${successMessage}
+        <form class="local-login" action="/auth/forgot-password" method="post">
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" autocomplete="email" required>
+          </label>
+          <button type="submit">Send reset link</button>
+          <p class="login-hint"><a href="/login">Back to sign in</a></p>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>`;
+  }
+
+  function renderResetPassword(req, error = "", message = "", tokenOverride = "") {
+    const url = new URL(req.url, baseUrl(req));
+    const token = tokenOverride || url.searchParams.get("token") || "";
+    const errorMessage = error ? `<p class="login-error">${escapeHtml(error)}</p>` : "";
+    const successMessage = message ? `<p class="login-success">${escapeHtml(message)}</p>` : "";
+
+    return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Choose a new password - LivBookReader</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body class="login-body">
+    <main class="login-shell">
+      <section class="login-panel" aria-labelledby="resetTitle">
+        <p class="login-kicker">LivBookReader</p>
+        <h1 id="resetTitle">Choose a new password</h1>
+        ${errorMessage}
+        ${successMessage}
+        <form class="local-login" action="/auth/reset-password" method="post">
+          <input type="hidden" name="token" value="${escapeHtml(token)}">
+          <label>
+            <span>New password</span>
+            <input name="password" type="password" autocomplete="new-password" required minlength="8">
+          </label>
+          <label>
+            <span>Confirm password</span>
+            <input name="confirmPassword" type="password" autocomplete="new-password" required minlength="8">
+          </label>
+          <button type="submit">Reset password</button>
+          <p class="login-hint"><a href="/login">Back to sign in</a></p>
+        </form>
       </section>
     </main>
   </body>
@@ -632,6 +1049,16 @@ export function createAuth({ baseDir }) {
             created_at text not null,
             last_used_at text,
             revoked_at text,
+            foreign key(user_id) references users(id)
+          );
+          create table if not exists auth_tokens (
+            id text primary key,
+            user_id text not null,
+            token_hash text not null unique,
+            purpose text not null,
+            created_at text not null,
+            expires_at text not null,
+            used_at text,
             foreign key(user_id) references users(id)
           );
         `);
@@ -773,6 +1200,67 @@ export function createAuth({ baseDir }) {
     };
   }
 
+  async function createAuthToken(userId, purpose, ttlMs) {
+    await ensureUserDb();
+    const token = randomToken(36);
+    const now = new Date();
+    const id = randomToken(18);
+
+    await runSql(usersDbPath, `
+      insert into auth_tokens (
+        id, user_id, token_hash, purpose, created_at, expires_at
+      ) values (
+        ${sqlValue(id)},
+        ${sqlValue(userId)},
+        ${sqlValue(tokenHash(token))},
+        ${sqlValue(purpose)},
+        ${sqlValue(now.toISOString())},
+        ${sqlValue(new Date(now.getTime() + ttlMs).toISOString())}
+      )
+    `);
+
+    return token;
+  }
+
+  async function consumeAuthToken(token, purpose) {
+    await ensureUserDb();
+    const now = new Date().toISOString();
+    const rows = await allRows(usersDbPath, `
+      select
+        auth_tokens.id as auth_token_id,
+        users.id,
+        users.provider,
+        users.provider_sub,
+        users.email,
+        users.email_verified,
+        users.name,
+        users.picture,
+        users.password_hash,
+        users.role,
+        users.created_at,
+        users.updated_at
+      from auth_tokens
+      join users on users.id = auth_tokens.user_id
+      where auth_tokens.token_hash = ${sqlValue(tokenHash(token))}
+        and auth_tokens.purpose = ${sqlValue(purpose)}
+        and auth_tokens.used_at is null
+        and auth_tokens.expires_at > ${sqlValue(now)}
+      limit 1
+    `);
+    const row = rows[0];
+    if (!row) {
+      return null;
+    }
+
+    await runSql(usersDbPath, `
+      update auth_tokens
+      set used_at = ${sqlValue(now)}
+      where id = ${sqlValue(row.auth_token_id)}
+    `);
+
+    return rowToUser(row);
+  }
+
   async function userForBearerToken(req) {
     const match = String(req.headers.authorization || "").match(/^Bearer\s+(.+)$/i);
     if (!match) {
@@ -846,7 +1334,7 @@ export function createAuth({ baseDir }) {
     return nextUser;
   }
 
-  async function authenticateLocal(login, password) {
+  async function withLocalAuthLock(operation) {
     const previousLocalAuth = localAuthQueue;
     let releaseLocalAuth;
     localAuthQueue = new Promise((resolve) => {
@@ -855,10 +1343,14 @@ export function createAuth({ baseDir }) {
 
     await previousLocalAuth;
     try {
-      return await authenticateLocalLocked(login, password);
+      return await operation();
     } finally {
       releaseLocalAuth();
     }
+  }
+
+  async function authenticateLocal(login, password) {
+    return withLocalAuthLock(() => authenticateLocalLocked(login, password));
   }
 
   async function authenticateLocalLocked(login, password) {
@@ -870,30 +1362,98 @@ export function createAuth({ baseDir }) {
     validateLocalCredentials(normalizedLogin, password);
 
     await ensureUserDb();
-    let user = await findUser(`provider = 'local' and email = ${sqlValue(normalizedLogin)}`);
-
+    const user = await findUser(`provider = 'local' and email = ${sqlValue(normalizedLogin)}`);
     if (!user) {
-      user = {
-        id: randomToken(18),
-        provider: "local",
-        providerSub: normalizedLogin,
-        email: normalizedLogin,
-        emailVerified: true,
-        name: normalizedLogin,
-        picture: "",
-        passwordHash: await hashPassword(password),
-        role: (await countUsers()) === 0 ? "admin" : "user",
-        updatedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString()
-      };
-      await insertOrReplaceUser(user);
-      return user;
+      throw new Error("Invalid email or password.");
     }
 
     if (!(await verifyPassword(password, user.passwordHash))) {
       throw new Error("Invalid email or password.");
     }
 
+    if (!user.emailVerified) {
+      throw new Error("Confirm your email address before signing in.");
+    }
+
+    user.updatedAt = new Date().toISOString();
+    await insertOrReplaceUser(user);
+    return user;
+  }
+
+  async function signupLocal(req) {
+    return withLocalAuthLock(() => signupLocalLocked(req));
+  }
+
+  async function signupLocalLocked(req) {
+    if (!localEnabled()) {
+      throw new Error("Local authentication is disabled.");
+    }
+
+    const params = new URLSearchParams(await readRequestBody(req));
+    const email = validateEmail(params.get("email") || "");
+    const password = params.get("password") || "";
+    validateNewPassword(password, params.get("confirmPassword") || "");
+
+    await ensureUserDb();
+    const existing = await findUser(`provider = 'local' and email = ${sqlValue(email)}`);
+    if (existing?.emailVerified) {
+      throw new Error("An account already exists for this email address.");
+    }
+
+    const now = new Date().toISOString();
+    const user = {
+      id: existing?.id || randomToken(18),
+      provider: "local",
+      providerSub: email,
+      email,
+      emailVerified: false,
+      name: email,
+      picture: "",
+      passwordHash: await hashPassword(password),
+      role: existing?.role || ((await countUsers()) === 0 ? "admin" : "user"),
+      updatedAt: now,
+      createdAt: existing?.createdAt || now
+    };
+
+    await insertOrReplaceUser(user);
+    await sendConfirmationEmail(req, user);
+    return user;
+  }
+
+  async function confirmLocalEmail(token) {
+    const user = await consumeAuthToken(token, "confirm_email");
+    if (!user) {
+      throw new Error("Confirmation link is invalid or expired.");
+    }
+
+    user.emailVerified = true;
+    user.updatedAt = new Date().toISOString();
+    await insertOrReplaceUser(user);
+    return user;
+  }
+
+  async function requestPasswordReset(req) {
+    const params = new URLSearchParams(await readRequestBody(req));
+    const email = validateEmail(params.get("email") || "");
+    await ensureUserDb();
+    const user = await findUser(`provider = 'local' and email = ${sqlValue(email)}`);
+    if (user) {
+      await sendPasswordResetEmail(req, user);
+    }
+  }
+
+  async function resetLocalPassword(params) {
+    const token = params.get("token") || "";
+    const password = params.get("password") || "";
+    validateNewPassword(password, params.get("confirmPassword") || "");
+
+    const user = await consumeAuthToken(token, "password_reset");
+    if (!user) {
+      throw new Error("Password reset link is invalid or expired.");
+    }
+
+    user.passwordHash = await hashPassword(password);
+    user.emailVerified = true;
     user.updatedAt = new Date().toISOString();
     await insertOrReplaceUser(user);
     return user;
@@ -1033,6 +1593,36 @@ export function createAuth({ baseDir }) {
       return true;
     }
 
+    if (req.method === "GET" && url.pathname === "/signup") {
+      const session = sessionFromRequest(req);
+      if (session) {
+        redirect(res, url.searchParams.get("returnTo") || "/");
+      } else {
+        sendHtml(res, 200, renderSignup(req));
+      }
+      return true;
+    }
+
+    if (req.method === "GET" && url.pathname === "/forgot-password") {
+      sendHtml(res, 200, renderForgotPassword(req));
+      return true;
+    }
+
+    if (req.method === "GET" && url.pathname === "/reset-password") {
+      sendHtml(res, 200, renderResetPassword(req));
+      return true;
+    }
+
+    if (req.method === "GET" && url.pathname === "/auth/confirm") {
+      try {
+        await confirmLocalEmail(url.searchParams.get("token") || "");
+        sendHtml(res, 200, renderLogin(req, "", "Email confirmed. You can sign in now."));
+      } catch (error) {
+        sendHtml(res, 400, renderLogin(req, error.message) || `<p>${escapeHtml(error.message)}</p>`);
+      }
+      return true;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/me") {
       const session = sessionFromRequest(req);
       res.writeHead(session ? 200 : 401, {
@@ -1085,6 +1675,39 @@ export function createAuth({ baseDir }) {
         await completeLocalLogin(req, res);
       } catch (error) {
         sendHtml(res, 400, renderLogin(req, error.message) || `<p>${escapeHtml(error.message)}</p>`);
+      }
+      return true;
+    }
+
+    if (req.method === "POST" && url.pathname === "/auth/signup") {
+      try {
+        await signupLocal(req);
+        sendHtml(res, 200, renderSignup(req, "", "Check your email to confirm your account before signing in."));
+      } catch (error) {
+        sendHtml(res, 400, renderSignup(req, error.message));
+      }
+      return true;
+    }
+
+    if (req.method === "POST" && url.pathname === "/auth/forgot-password") {
+      try {
+        await requestPasswordReset(req);
+        sendHtml(res, 200, renderForgotPassword(req, "", "If that account exists, a reset link has been sent."));
+      } catch (error) {
+        sendHtml(res, 400, renderForgotPassword(req, error.message));
+      }
+      return true;
+    }
+
+    if (req.method === "POST" && url.pathname === "/auth/reset-password") {
+      let token = "";
+      try {
+        const params = new URLSearchParams(await readRequestBody(req));
+        token = params.get("token") || "";
+        await resetLocalPassword(params);
+        sendHtml(res, 200, renderLogin(req, "", "Password reset. You can sign in now."));
+      } catch (error) {
+        sendHtml(res, 400, renderResetPassword(req, error.message, "", token));
       }
       return true;
     }

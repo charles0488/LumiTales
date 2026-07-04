@@ -8,16 +8,6 @@
   </head>
   <body>
     <div id="bookshelfScrim" class="bookshelf-scrim" hidden></div>
-    <div id="questionDialog" class="question-dialog" role="dialog" aria-modal="true" aria-labelledby="questionDialogTitle" aria-describedby="questionDialogMessage" hidden>
-      <div class="question-dialog-panel">
-        <h2 id="questionDialogTitle">Ready?</h2>
-        <p id="questionDialogMessage"></p>
-        <div class="question-dialog-actions">
-          <button id="questionConfirm" type="button">Yes</button>
-          <button id="questionCancel" type="button">Not now</button>
-        </div>
-      </div>
-    </div>
     <main class="reader-shell">
       <aside id="bookshelfPanel" class="bookshelf" aria-label="Bookshelf">
         <div class="bookshelf-heading">
@@ -49,10 +39,16 @@
             <button id="prevButton" type="button" aria-label="Previous page">‹</button>
             <button id="playButton" type="button" aria-label="Play">▶</button>
             <button id="nextButton" type="button" aria-label="Next page">›</button>
-            <label class="auto-toggle">
-              <input id="autoAdvance" type="checkbox" checked>
-              Auto
-            </label>
+            <div class="playback-options">
+              <label class="playback-toggle">
+                <input id="autoAdvance" type="checkbox" checked>
+                Auto
+              </label>
+              <label class="playback-toggle">
+                <input id="askQuestions" type="checkbox" checked>
+                Questions
+              </label>
+            </div>
             <p id="playbackStatus" role="status"></p>
           </div>
         </div>
