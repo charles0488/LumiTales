@@ -33,7 +33,7 @@ export PUBLIC_BASE_URL="http://localhost:3000"
 
 For local sign-in, open `/signup` to create an account with an email address and password. The app sends a confirmation link, and users must confirm their email before signing in at `/login`. The first created account in an empty auth database is assigned the `admin` role; later accounts are assigned the `user` role. Passwords are stored as salted `scrypt` hashes in `data/users.sqlite3`.
 
-By default, confirmation and password reset emails are printed to the server console for local development. For real delivery, configure one of these email senders.
+By default, confirmation and password reset emails are printed to the server console for local development. For real delivery, configure Resend or SMTP.
 
 Resend API:
 
@@ -52,7 +52,7 @@ export SMTP_PASS="smtp-password"
 export AUTH_EMAIL_FROM="LumiTales <no-reply@your-domain.example>"
 ```
 
-Use `SMTP_SECURE=1` for implicit TLS, usually port 465. Set `SMTP_STARTTLS=0` only for SMTP servers that do not support STARTTLS.
+Use `SMTP_SECURE=1` for implicit TLS, usually port 465. For port 587, keep `SMTP_SECURE=0` and `SMTP_STARTTLS=1` so the connection upgrades with STARTTLS. Set `SMTP_STARTTLS=0` only for SMTP servers that do not support STARTTLS.
 
 Users can request a password reset at `/forgot-password`.
 
@@ -146,15 +146,41 @@ docker compose -f docker-compose.yml -f prd.yml up --build
 
 Both files read values from environment variables or a `.env` file. Production requires `PUBLIC_BASE_URL`, `SESSION_SECRET`, and `AUTH_EMAIL_FROM`; optional OAuth and email delivery settings are declared in `prd.yml`.
 
+Common production settings:
+
+```sh
+PUBLIC_BASE_URL=https://your-domain.example
+SESSION_SECRET=replace-with-a-long-random-secret
+AUTH_EMAIL_FROM="LumiTales <no-reply@your-domain.example>"
+LOCAL_AUTH_ENABLED=1
+```
+
+For email delivery, set either Resend:
+
+```sh
+RESEND_API_KEY=re_...
+```
+
+Or SMTP:
+
+```sh
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=smtp-user
+SMTP_PASS=smtp-password
+SMTP_SECURE=0
+SMTP_STARTTLS=1
+```
+
 If Compose is not installed, use plain Docker:
 
 ```sh
-docker build -t liv-book-reader .
+docker build -t lumitales .
 docker run --rm -it \
   -p 3000:3000 \
     -v lumitales-books:/app/books \
     -v lumitales-data:/app/data \
-    liv-book-reader
+    lumitales
 ```
 
 Then open:
@@ -181,3 +207,5 @@ To inspect or back up the persistent books data, use the `lumitales-books` Docke
 - Plays each page's MP3 narration.
 - Auto-advances after audio ends.
 - Supports manual previous/next page controls.
+- Shows optional before/after-reading questions; the Questions toggle is off by default.
+- Taps or clicks the page background to show or hide playback controls.
