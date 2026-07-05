@@ -1,0 +1,23 @@
+services:
+  liv-book-reader:
+    environment:
+      PORT: ${PORT:-3000}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?Set PUBLIC_BASE_URL in your production environment or .env file}
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in your production environment or .env file}
+      AUTH_DATA_DIR: ${AUTH_DATA_DIR:-/app/data}
+      LOCAL_AUTH_ENABLED: ${LOCAL_AUTH_ENABLED:-1}
+      AUTH_EMAIL_FROM: ${AUTH_EMAIL_FROM:?Set AUTH_EMAIL_FROM in your production environment or .env file}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_API_URL: ${RESEND_API_URL:-https://api.resend.com/emails}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_SECURE: ${SMTP_SECURE:-0}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-1}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}

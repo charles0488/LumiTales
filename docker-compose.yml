@@ -1,24 +1,16 @@
+name: lumitales
+
 services:
   liv-book-reader:
     build: .
     ports:
       - "3000:3000"
-    environment:
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
-      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in your shell or .env file}
-      LOCAL_AUTH_ENABLED: ${LOCAL_AUTH_ENABLED:-1}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
-      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
-      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
-      APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
     volumes:
-      - livbookreader-books:/app/books
-      - livbookreader-data:/app/data
+      - lumitales-books:/app/books
+      - lumitales-data:/app/data
 
 volumes:
-  livbookreader-books:
-    name: livbookreader-books
-  livbookreader-data:
-    name: livbookreader-data
+  lumitales-books:
+    name: lumitales-books
+  lumitales-data:
+    name: lumitales-data

@@ -1,4 +1,4 @@
-# LivBookReader
+# LumiTales
 
 A local web reader for illustrated books with synchronized page audio.
 
@@ -39,7 +39,7 @@ Resend API:
 
 ```sh
 export RESEND_API_KEY="re_..."
-export AUTH_EMAIL_FROM="LivBookReader <no-reply@your-domain.example>"
+export AUTH_EMAIL_FROM="LumiTales <no-reply@your-domain.example>"
 ```
 
 SMTP:
@@ -49,17 +49,10 @@ export SMTP_HOST="smtp.example.com"
 export SMTP_PORT=587
 export SMTP_USER="smtp-user"
 export SMTP_PASS="smtp-password"
-export AUTH_EMAIL_FROM="LivBookReader <no-reply@your-domain.example>"
+export AUTH_EMAIL_FROM="LumiTales <no-reply@your-domain.example>"
 ```
 
 Use `SMTP_SECURE=1` for implicit TLS, usually port 465. Set `SMTP_STARTTLS=0` only for SMTP servers that do not support STARTTLS.
-
-Local sendmail-compatible command:
-
-```sh
-export SENDMAIL_PATH="/usr/sbin/sendmail"
-export AUTH_EMAIL_FROM="LivBookReader <no-reply@example.com>"
-```
 
 Users can request a password reset at `/forgot-password`.
 
@@ -119,7 +112,7 @@ The token is returned once. Use it as a bearer token for admin-only uploads:
 
 ```sh
 curl -X POST "http://localhost:3000/books/my_new_book" \
-  -H "Authorization: Bearer livbook_..." \
+  -H "Authorization: Bearer lumitales_..." \
   -F "file=@/path/to/book.zip"
 ```
 
@@ -128,36 +121,30 @@ curl -X POST "http://localhost:3000/books/my_new_book" \
 Build and run the reader:
 
 ```sh
-docker compose up --build
+docker compose -f docker-compose.yml -f dev.yml up --build
 ```
 
 If your Docker setup reports `unknown flag: --build`, build and run as two commands:
 
 ```sh
-docker compose build
-docker compose up
+docker compose -f docker-compose.yml -f dev.yml build
+docker compose -f docker-compose.yml -f dev.yml up
 ```
 
 For older Docker Compose v1 installs, use:
 
 ```sh
-docker-compose build
-docker-compose up
+docker-compose -f docker-compose.yml -f dev.yml build
+docker-compose -f docker-compose.yml -f dev.yml up
 ```
 
-Configure Docker through environment variables or a `.env` file:
+Use `dev.yml` for local defaults and `prd.yml` for production-required configuration:
 
 ```sh
-SESSION_SECRET=replace-with-a-long-random-secret
-PUBLIC_BASE_URL=http://localhost:3000
-LOCAL_AUTH_ENABLED=1
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-APPLE_CLIENT_ID=...
-APPLE_TEAM_ID=...
-APPLE_KEY_ID=...
-APPLE_PRIVATE_KEY=...
+docker compose -f docker-compose.yml -f prd.yml up --build
 ```
+
+Both files read values from environment variables or a `.env` file. Production requires `PUBLIC_BASE_URL`, `SESSION_SECRET`, and `AUTH_EMAIL_FROM`; optional OAuth and email delivery settings are declared in `prd.yml`.
 
 If Compose is not installed, use plain Docker:
 
@@ -165,8 +152,8 @@ If Compose is not installed, use plain Docker:
 docker build -t liv-book-reader .
 docker run --rm -it \
   -p 3000:3000 \
-    -v livbookreader-books:/app/books \
-    -v livbookreader-data:/app/data \
+    -v lumitales-books:/app/books \
+    -v lumitales-data:/app/data \
     liv-book-reader
 ```
 
@@ -176,7 +163,7 @@ Then open:
 http://localhost:3000/
 ```
 
-Docker stores `/app/books` in the named `livbookreader-books` volume and `/app/data` in the named `livbookreader-data` volume, so uploaded books and known users survive container rebuilds and image updates. New books should be added through the app or copied into the Docker volume.
+Docker stores `/app/books` in the named `lumitales-books` volume and `/app/data` in the named `lumitales-data` volume, so uploaded books and known users survive container rebuilds and image updates. New books should be added through the app or copied into the Docker volume.
 
 To use local folders instead of the named Docker volumes when using plain Docker, replace the volume flags with:
 
@@ -184,7 +171,7 @@ To use local folders instead of the named Docker volumes when using plain Docker
 -v "$PWD/books:/app/books"
 ```
 
-To inspect or back up the persistent books data, use the `livbookreader-books` Docker volume.
+To inspect or back up the persistent books data, use the `lumitales-books` Docker volume.
 
 ## Features
 

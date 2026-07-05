@@ -453,6 +453,8 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fdfbf6;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 #pageImage {
@@ -483,6 +485,7 @@ button {
   transform: translate(-50%, -50%);
   transition: opacity 160ms ease, transform 180ms ease, visibility 180ms ease;
   backdrop-filter: blur(12px);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .is-playback-pane-hidden .playback-pane {

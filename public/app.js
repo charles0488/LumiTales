@@ -462,14 +462,13 @@ elements.audio.addEventListener("ended", () => {
 
 elements.imageFrame.addEventListener("click", (event) => {
   if (
-    isPlaybackPaneVisible ||
     event.target.closest(".playback-pane") ||
     event.target.closest(".bookshelf-toggle, .book-meta")
   ) {
     return;
   }
 
-  setPlaybackPaneVisible(true);
+  setPlaybackPaneVisible(!isPlaybackPaneVisible);
   event.stopPropagation();
 });
 

@@ -1,13 +1,13 @@
 import { createHash, createHmac, createPublicKey, createSign, createVerify, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
-import { execFile, spawn } from "node:child_process";
+import { execFile } from "node:child_process";
 import { mkdir, readFile } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 import tls from "node:tls";
 import { promisify } from "node:util";
 
-const sessionCookieName = "livbook_session";
-const oauthCookieName = "livbook_oauth";
+const sessionCookieName = "lumitales_session";
+const oauthCookieName = "lumitales_oauth";
 const sessionTtlMs = 1000 * 60 * 60 * 24 * 14;
 const oauthStateTtlMs = 1000 * 60 * 10;
 const jwksTtlMs = 1000 * 60 * 60;
@@ -403,8 +403,7 @@ export function createAuth({ baseDir }) {
   const dataDir = process.env.AUTH_DATA_DIR || path.join(baseDir, "data");
   const usersDbPath = path.join(dataDir, "users.sqlite3");
   const legacyUsersPath = path.join(dataDir, "users.json");
-  const sendmailPath = process.env.SENDMAIL_PATH || "";
-  const mailFrom = process.env.AUTH_EMAIL_FROM || "LivBookReader <no-reply@livbookreader.local>";
+  const mailFrom = process.env.AUTH_EMAIL_FROM || "LumiTales <no-reply@lumitales.local>";
   const resendApiKey = process.env.RESEND_API_KEY || "";
   const resendApiUrl = process.env.RESEND_API_URL || "https://api.resend.com/emails";
   const smtpHost = process.env.SMTP_HOST || "";
@@ -465,30 +464,6 @@ export function createAuth({ baseDir }) {
 
     if (smtpHost) {
       await sendSmtpEmail({ to, subject, text });
-      return;
-    }
-
-    if (sendmailPath) {
-      await new Promise((resolve, reject) => {
-        const child = spawn(sendmailPath, ["-t"], { stdio: ["pipe", "ignore", "pipe"] });
-        const errors = [];
-        child.stderr.on("data", (chunk) => errors.push(chunk));
-        child.on("error", reject);
-        child.on("close", (code) => {
-          if (code === 0) {
-            resolve();
-          } else {
-            reject(new Error(`sendmail exited with code ${code}: ${Buffer.concat(errors).toString("utf8")}`));
-          }
-        });
-        child.stdin.end([
-          `From: ${mailFrom}`,
-          `To: ${to}`,
-          `Subject: ${subject}`,
-          "",
-          text
-        ].join("\n"));
-      });
       return;
     }
 
@@ -685,7 +660,7 @@ export function createAuth({ baseDir }) {
     const confirmUrl = `${baseUrl(req)}/auth/confirm?token=${encodeURIComponent(token)}`;
     await deliverAuthEmail({
       to: user.email,
-      subject: "Confirm your LivBookReader email",
+      subject: "Confirm your LumiTales email",
       text: `Confirm your email address to finish signing up:\n\n${confirmUrl}\n\nThis link expires in 24 hours.`
     });
   }
@@ -695,7 +670,7 @@ export function createAuth({ baseDir }) {
     const resetUrl = `${baseUrl(req)}/reset-password?token=${encodeURIComponent(token)}`;
     await deliverAuthEmail({
       to: user.email,
-      subject: "Reset your LivBookReader password",
+      subject: "Reset your LumiTales password",
       text: `Reset your password here:\n\n${resetUrl}\n\nThis link expires in 30 minutes.`
     });
   }
@@ -841,13 +816,14 @@ export function createAuth({ baseDir }) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign in - LivBookReader</title>
+    <title>Sign in - LumiTales</title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body class="login-body">
     <main class="login-shell">
       <section class="login-panel" aria-labelledby="loginTitle">
-        <p class="login-kicker">LivBookReader</p>
+        <p class="login-kicker">LumiTales</p>
         <h1 id="loginTitle">Sign in to keep reading</h1>
         ${errorMessage}
         ${successMessage}
@@ -875,13 +851,14 @@ export function createAuth({ baseDir }) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign up - LivBookReader</title>
+    <title>Sign up - LumiTales</title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body class="login-body">
     <main class="login-shell">
       <section class="login-panel" aria-labelledby="signupTitle">
-        <p class="login-kicker">LivBookReader</p>
+        <p class="login-kicker">LumiTales</p>
         <h1 id="signupTitle">Create your account</h1>
         ${errorMessage}
         ${successMessage}
@@ -917,13 +894,14 @@ export function createAuth({ baseDir }) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Reset password - LivBookReader</title>
+    <title>Reset password - LumiTales</title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body class="login-body">
     <main class="login-shell">
       <section class="login-panel" aria-labelledby="forgotTitle">
-        <p class="login-kicker">LivBookReader</p>
+        <p class="login-kicker">LumiTales</p>
         <h1 id="forgotTitle">Reset your password</h1>
         ${errorMessage}
         ${successMessage}
@@ -952,13 +930,14 @@ export function createAuth({ baseDir }) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Choose a new password - LivBookReader</title>
+    <title>Choose a new password - LumiTales</title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body class="login-body">
     <main class="login-shell">
       <section class="login-panel" aria-labelledby="resetTitle">
-        <p class="login-kicker">LivBookReader</p>
+        <p class="login-kicker">LumiTales</p>
         <h1 id="resetTitle">Choose a new password</h1>
         ${errorMessage}
         ${successMessage}
@@ -1176,7 +1155,7 @@ export function createAuth({ baseDir }) {
 
   async function createApiToken(user, name = "") {
     await ensureUserDb();
-    const token = `livbook_${randomToken(32)}`;
+    const token = `lumitales_${randomToken(32)}`;
     const now = new Date().toISOString();
     const id = randomToken(18);
 

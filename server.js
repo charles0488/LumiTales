@@ -431,7 +431,7 @@ async function handleBookUpload(req, res) {
     throw httpError(413, "Zip upload must be smaller than 50 MB.");
   }
 
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "livbook-upload-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "lumitales-upload-"));
   const zipPath = path.join(tempDir, "book.zip");
   const extractDir = path.join(tempDir, "extract");
 
@@ -529,6 +529,6 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`LivBookReader is running at http://localhost:${port}`);
+  console.log(`LumiTales is running at http://localhost:${port}`);
   console.log(`Network access is enabled on port ${port}`);
 });
