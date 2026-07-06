@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { createAuth } from "./auth.js";
+import { createLogger } from "./logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
@@ -14,7 +15,9 @@ const booksDir = path.join(__dirname, "books");
 const port = Number(process.env.PORT || 3000);
 const execFileAsync = promisify(execFile);
 const maxBookUploadSize = 50 * 1024 * 1024;
-const auth = createAuth({ baseDir: __dirname });
+const logger = createLogger({ service: "lumitales" });
+const auth = createAuth({ baseDir: __dirname, logger: logger.child({ component: "auth" }) });
+let nextRequestId = 1;
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -28,6 +31,10 @@ const mimeTypes = {
 function sendJson(res, status, payload) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(payload));
+}
+
+function requestId() {
+  return `${Date.now().toString(36)}-${nextRequestId++}`;
 }
 
 function httpError(statusCode, message) {
@@ -195,7 +202,8 @@ async function listBooks() {
             pageCount: pages.length,
             cover: pages[0]?.image || null
           };
-        } catch {
+        } catch (error) {
+          logger.warn("Skipping invalid book while listing books", { bookId: entry.name, error });
           return null;
         }
       })
@@ -233,7 +241,8 @@ async function unzipBook(zipPath, extractDir) {
       timeout: 120_000,
       maxBuffer: 1024 * 1024 * 10
     }));
-  } catch {
+  } catch (error) {
+    logger.warn("Uploaded zip could not be inspected", { error });
     throw httpError(400, "Uploaded file is not a readable zip archive.");
   }
 
@@ -249,7 +258,8 @@ async function unzipBook(zipPath, extractDir) {
       timeout: 120_000,
       maxBuffer: 1024 * 1024 * 10
     });
-  } catch {
+  } catch (error) {
+    logger.warn("Uploaded zip could not be extracted", { error });
     throw httpError(400, "Zip file could not be extracted.");
   }
 }
@@ -422,6 +432,7 @@ async function handleBookUpload(req, res) {
 
   const bookId = bookUploadMatch[1];
   validateBookId(bookId);
+  logger.info("Book upload started", { requestId: req.id, bookId });
 
   const uploadBytes = extractZipUpload(req, await readBinaryRequestBody(req, maxBookUploadSize));
   if (uploadBytes.length === 0) {
@@ -441,9 +452,11 @@ async function handleBookUpload(req, res) {
     const bookRoot = await findBookRoot(extractDir);
     await validateBookUpload(bookRoot);
     await installBookUpload(bookId, bookRoot);
+    logger.info("Book upload installed", { requestId: req.id, bookId, bytes: uploadBytes.length });
     sendJson(res, 201, { ok: true, id: bookId });
   } finally {
     await rm(tempDir, { recursive: true, force: true });
+    logger.debug("Book upload temp directory removed", { requestId: req.id, bookId, tempDir });
   }
 
   return true;
@@ -486,14 +499,34 @@ async function serveStatic(req, res) {
 
     const ext = path.extname(filePath).toLowerCase();
     sendFileRange(req, res, filePath, fileStat, mimeTypes[ext] || "application/octet-stream");
-  } catch {
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      logger.warn("Static file lookup failed", { requestId: req.id, path: url.pathname, error });
+    }
     sendJson(res, 404, { error: "Not found" });
   }
 }
 
 const server = createServer(async (req, res) => {
+  req.id = req.headers["x-request-id"] || requestId();
+  res.setHeader("x-request-id", req.id);
+  const startedAt = process.hrtime.bigint();
+  const url = new URL(req.url, `http://${req.headers.host}`);
+
+  res.once("finish", () => {
+    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+    logger.info("Request completed", {
+      requestId: req.id,
+      method: req.method,
+      path: url.pathname,
+      statusCode: res.statusCode,
+      durationMs: Number(durationMs.toFixed(1)),
+      userId: req.user?.id,
+      userRole: req.user?.role
+    });
+  });
+
   try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
     const isPublicStyle = req.method === "GET" && url.pathname === "/styles.css";
     const isAdminBookPost = req.method === "POST" && url.pathname.startsWith("/books/");
 
@@ -524,11 +557,36 @@ const server = createServer(async (req, res) => {
 
     await serveStatic(req, res);
   } catch (error) {
-    sendJson(res, error.statusCode || 500, { error: error.message || "Unexpected server error." });
+    const statusCode = error.statusCode || 500;
+    const level = statusCode >= 500 ? "error" : "warn";
+    logger[level]("Request failed", {
+      requestId: req.id,
+      method: req.method,
+      path: url.pathname,
+      statusCode,
+      userId: req.user?.id,
+      userRole: req.user?.role,
+      error
+    });
+    sendJson(res, statusCode, { error: error.message || "Unexpected server error." });
   }
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`LumiTales is running at http://localhost:${port}`);
-  console.log(`Network access is enabled on port ${port}`);
+  logger.info("LumiTales started", { port, url: `http://localhost:${port}` });
+  logger.info("Network access enabled", { port });
+});
+
+server.on("error", (error) => {
+  logger.error("HTTP server error", { error });
+});
+
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught exception", { error });
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled rejection", { error: reason instanceof Error ? reason : new Error(String(reason)) });
+  process.exitCode = 1;
 });

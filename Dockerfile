@@ -16,6 +16,7 @@ WORKDIR /app
 COPY package.json ./
 COPY server.js ./
 COPY auth.js ./
+COPY logger.js ./
 COPY public ./public
 
 VOLUME ["/app/books", "/app/data"]

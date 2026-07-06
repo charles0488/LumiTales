@@ -116,6 +116,16 @@ curl -X POST "http://localhost:3000/books/my_new_book" \
   -F "file=@/path/to/book.zip"
 ```
 
+## Logging
+
+Logs are emitted to stdout as JSON lines by default. Each request gets an `x-request-id`, and completion logs include method, path, status code, duration, and authenticated user metadata when available.
+
+Set `LOG_LEVEL=debug` for verbose diagnostics, or `LOG_FORMAT=pretty` for local human-readable logs.
+
+```sh
+LOG_LEVEL=debug LOG_FORMAT=pretty node server.js
+```
+
 ## Docker
 
 Build and run the reader:

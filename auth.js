@@ -396,7 +396,7 @@ function userSelectSql(where) {
   return `select id, provider, provider_sub, email, email_verified, name, picture, password_hash, role, created_at, updated_at from users where ${where} limit 1`;
 }
 
-export function createAuth({ baseDir }) {
+export function createAuth({ baseDir, logger = console }) {
   const configuredBaseUrl = process.env.PUBLIC_BASE_URL || "";
   const sessionSecret = process.env.SESSION_SECRET || randomToken(48);
   const secureCookies = (configuredBaseUrl || "").startsWith("https://");
@@ -419,7 +419,7 @@ export function createAuth({ baseDir }) {
   let localAuthQueue = Promise.resolve();
 
   if (!process.env.SESSION_SECRET) {
-    console.warn("SESSION_SECRET is not set. Sessions will be invalidated whenever the server restarts.");
+    logger.warn("SESSION_SECRET is not set. Sessions will be invalidated whenever the server restarts.");
   }
 
   const providers = {
@@ -467,7 +467,7 @@ export function createAuth({ baseDir }) {
       return;
     }
 
-    console.warn(`[auth email] To: ${to}\n[auth email] Subject: ${subject}\n${text}`);
+    logger.warn("Auth email delivery is not configured; printing local development email", { to, subject, text });
   }
 
   async function sendResendEmail({ to, subject, text }) {
@@ -487,6 +487,7 @@ export function createAuth({ baseDir }) {
 
     if (!response.ok) {
       const body = await response.text();
+      logger.warn("Resend email delivery failed", { statusCode: response.status, body });
       throw new Error(`Email API failed with HTTP ${response.status}: ${body}`);
     }
   }
@@ -1039,6 +1040,7 @@ export function createAuth({ baseDir }) {
         await migrateLegacyUsers();
         await removeBukadminUser();
         await ensureFirstUserAdmin();
+        logger.info("Auth database ready", { dbPath: usersDbPath });
       })();
     }
 
@@ -1337,19 +1339,23 @@ export function createAuth({ baseDir }) {
     await ensureUserDb();
     const user = await findUser(`provider = 'local' and email = ${sqlValue(normalizedLogin)}`);
     if (!user) {
+      logger.warn("Local login failed: user not found", { login: normalizedLogin });
       throw new Error("Invalid email or password.");
     }
 
     if (!(await verifyPassword(password, user.passwordHash))) {
+      logger.warn("Local login failed: invalid password", { userId: user.id, login: normalizedLogin });
       throw new Error("Invalid email or password.");
     }
 
     if (!user.emailVerified) {
+      logger.warn("Local login failed: email not verified", { userId: user.id, login: normalizedLogin });
       throw new Error("Confirm your email address before signing in.");
     }
 
     user.updatedAt = new Date().toISOString();
     await insertOrReplaceUser(user);
+    logger.info("Local login succeeded", { userId: user.id, role: user.role });
     return user;
   }
 
@@ -1389,7 +1395,9 @@ export function createAuth({ baseDir }) {
     };
 
     await insertOrReplaceUser(user);
+    logger.info("Local signup created or refreshed pending user", { userId: user.id, email: user.email, role: user.role });
     await sendConfirmationEmail(req, user);
+    logger.info("Confirmation email queued", { userId: user.id, email: user.email });
     return user;
   }
 
@@ -1402,6 +1410,7 @@ export function createAuth({ baseDir }) {
     user.emailVerified = true;
     user.updatedAt = new Date().toISOString();
     await insertOrReplaceUser(user);
+    logger.info("Local email confirmed", { userId: user.id });
     return user;
   }
 
@@ -1412,6 +1421,9 @@ export function createAuth({ baseDir }) {
     const user = await findUser(`provider = 'local' and email = ${sqlValue(email)}`);
     if (user) {
       await sendPasswordResetEmail(req, user);
+      logger.info("Password reset email queued", { userId: user.id, email });
+    } else {
+      logger.warn("Password reset requested for unknown email", { email });
     }
   }
 
@@ -1429,6 +1441,7 @@ export function createAuth({ baseDir }) {
     user.emailVerified = true;
     user.updatedAt = new Date().toISOString();
     await insertOrReplaceUser(user);
+    logger.info("Local password reset completed", { userId: user.id });
     return user;
   }
 
@@ -1532,6 +1545,7 @@ export function createAuth({ baseDir }) {
     const user = await authenticateLocal(params.get("email") || "", params.get("password") || "");
 
     startSession(res, user);
+    logger.info("Local session started", { requestId: req.id, userId: user.id, role: user.role });
     redirect(res, safeReturnTo);
   }
 
@@ -1591,6 +1605,7 @@ export function createAuth({ baseDir }) {
         await confirmLocalEmail(url.searchParams.get("token") || "");
         sendHtml(res, 200, renderLogin(req, "", "Email confirmed. You can sign in now."));
       } catch (error) {
+        logger.warn("Auth flow failed", { requestId: req.id, path: url.pathname, error });
         sendHtml(res, 400, renderLogin(req, error.message) || `<p>${escapeHtml(error.message)}</p>`);
       }
       return true;
@@ -1613,12 +1628,14 @@ export function createAuth({ baseDir }) {
         }
 
         const token = await createApiToken(req.user, await readTokenRequestName(req));
+        logger.info("API token created", { requestId: req.id, userId: req.user.id, tokenId: token.id, name: token.name });
         res.writeHead(201, {
           "content-type": "application/json; charset=utf-8",
           "cache-control": "no-store"
         });
         res.end(JSON.stringify(token));
       } catch (error) {
+        logger.warn("API token creation failed", { requestId: req.id, userId: req.user?.id, error });
         res.writeHead(error.statusCode || 500, {
           "content-type": "application/json; charset=utf-8",
           "cache-control": "no-store"
@@ -1639,6 +1656,7 @@ export function createAuth({ baseDir }) {
         }
       }
       clearAuthCookies(res);
+      logger.info("User logged out", { requestId: req.id, userId: session?.user?.id });
       redirect(res, "/login");
       return true;
     }
@@ -1647,6 +1665,7 @@ export function createAuth({ baseDir }) {
       try {
         await completeLocalLogin(req, res);
       } catch (error) {
+        logger.warn("Local login request failed", { requestId: req.id, path: url.pathname, error });
         sendHtml(res, 400, renderLogin(req, error.message) || `<p>${escapeHtml(error.message)}</p>`);
       }
       return true;
@@ -1657,6 +1676,7 @@ export function createAuth({ baseDir }) {
         await signupLocal(req);
         sendHtml(res, 200, renderSignup(req, "", "Check your email to confirm your account before signing in."));
       } catch (error) {
+        logger.warn("Signup request failed", { requestId: req.id, path: url.pathname, error });
         sendHtml(res, 400, renderSignup(req, error.message));
       }
       return true;
@@ -1667,6 +1687,7 @@ export function createAuth({ baseDir }) {
         await requestPasswordReset(req);
         sendHtml(res, 200, renderForgotPassword(req, "", "If that account exists, a reset link has been sent."));
       } catch (error) {
+        logger.warn("Forgot password request failed", { requestId: req.id, path: url.pathname, error });
         sendHtml(res, 400, renderForgotPassword(req, error.message));
       }
       return true;
@@ -1680,6 +1701,7 @@ export function createAuth({ baseDir }) {
         await resetLocalPassword(params);
         sendHtml(res, 200, renderLogin(req, "", "Password reset. You can sign in now."));
       } catch (error) {
+        logger.warn("Reset password request failed", { requestId: req.id, path: url.pathname, error });
         sendHtml(res, 400, renderResetPassword(req, error.message, "", token));
       }
       return true;
@@ -1696,6 +1718,7 @@ export function createAuth({ baseDir }) {
       try {
         await completeLogin(req, res, callbackMatch[1]);
       } catch (error) {
+        logger.warn("OAuth callback failed", { requestId: req.id, path: url.pathname, provider: callbackMatch[1], error });
         sendHtml(res, 400, renderLogin(req, error.message) || `<p>${escapeHtml(error.message)}</p>`);
       }
       return true;
