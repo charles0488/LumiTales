@@ -786,13 +786,11 @@ export function createAuth({ baseDir }) {
 
     const url = new URL(req.url, baseUrl(req));
     const returnTo = url.searchParams.get("returnTo") || "/";
-    const googleReady = providerEnabled(providers.google);
-    const appleReady = appleEnabled(providers.apple);
     const localReady = localEnabled();
     const safeReturnTo = returnTo.startsWith("/") ? returnTo : "/";
-    const setupMessage = googleReady || appleReady || localReady
+    const setupMessage = localReady
       ? ""
-      : "<p class=\"login-hint\">Authentication is enabled, but no provider credentials are configured yet.</p>";
+      : "<p class=\"login-hint\">Local sign-in is disabled.</p>";
     const errorMessage = error ? `<p class="login-error">${escapeHtml(error)}</p>` : "";
     const successMessage = message ? `<p class="login-success">${escapeHtml(message)}</p>` : "";
     const localForm = localReady
@@ -829,10 +827,6 @@ export function createAuth({ baseDir }) {
         ${successMessage}
         ${setupMessage}
         ${localForm}
-        <div class="login-actions">
-          <a class="login-button${googleReady ? "" : " is-disabled"}" href="/auth/google?returnTo=${encodeURIComponent(safeReturnTo)}" aria-disabled="${!googleReady}">Continue with Google</a>
-          <a class="login-button${appleReady ? "" : " is-disabled"}" href="/auth/apple?returnTo=${encodeURIComponent(safeReturnTo)}" aria-disabled="${!appleReady}">Continue with Apple</a>
-        </div>
       </section>
     </main>
   </body>
