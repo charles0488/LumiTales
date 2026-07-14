@@ -109,7 +109,7 @@ voices/book_level_2/page_000.mp3
 voices/book_level_2/page_001.mp3
 ```
 
-Every `book_level_<n>.json` must have a matching `voices/book_level_<n>` folder, and each page must resolve to an image plus a same-named `.mp3` for that level. The uploader normalizes page image and audio paths. Legacy single-level packages containing `book.json` and a flat `voices` folder are converted to level 1 during upload.
+Every `book_level_<n>.json` must have a matching `voices/book_level_<n>` folder, and each page must resolve to an image plus a same-named `.mp3` for that level. The uploader normalizes page image and audio paths. A package must contain at least one level file; `book.json` is not a supported upload manifest.
 
 Admins can create API tokens for scripted uploads:
 

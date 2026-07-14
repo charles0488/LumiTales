@@ -302,12 +302,12 @@ async function findBookRoot(extractDir) {
     }
   }
 
-  throw httpError(400, "Book upload must contain book_level_<n>.json (or legacy book.json) at the zip root or inside one top-level folder.");
+  throw httpError(400, "Book upload must contain book_level_<n>.json at the zip root or inside one top-level folder.");
 }
 
 async function containsBookJson(dirPath) {
   const entries = await readdir(dirPath, { withFileTypes: true });
-  return entries.some((entry) => entry.isFile() && (/^book_level_\d+\.json$/.test(entry.name) || entry.name === "book.json"));
+  return entries.some((entry) => entry.isFile() && /^book_level_[1-9]\d*\.json$/.test(entry.name));
 }
 
 async function assertDirectory(dirPath, label) {
@@ -421,13 +421,10 @@ async function validateBookUpload(bookRoot) {
     }
   }
 
-  // Keep accepting the original single-level package shape, but new uploads
-  // should use book_level_<n>.json so the reader can discover their levels.
-  const bookFiles = levelFiles.length > 0
-    ? levelFiles.map(({ entry, match }) => ({ fileName: entry.name, level: Number(match[1]) }))
-    : rootEntries.some((entry) => entry.isFile() && entry.name === "book.json")
-      ? [{ fileName: "book.json", level: null }]
-      : [];
+  const bookFiles = levelFiles.map(({ entry, match }) => ({
+    fileName: entry.name,
+    level: Number(match[1])
+  }));
 
   if (bookFiles.length === 0) {
     throw httpError(400, "Book upload must contain at least one book_level_<n>.json file.");
@@ -442,20 +439,16 @@ async function validateBookUpload(bookRoot) {
       throw httpError(400, `${fileName} must be valid JSON.`);
     }
 
-    const levelVoiceDirName = level === null ? null : `book_level_${level}`;
-    const levelVoicesDir = levelVoiceDirName ? path.join(voicesDir, levelVoiceDirName) : voicesDir;
-    await assertDirectory(levelVoicesDir, levelVoiceDirName ? `voices/${levelVoiceDirName}` : "voices");
+    const levelVoiceDirName = `book_level_${level}`;
+    const levelVoicesDir = path.join(voicesDir, levelVoiceDirName);
+    await assertDirectory(levelVoicesDir, `voices/${levelVoiceDirName}`);
     const voiceFiles = await directFileNames(levelVoicesDir);
     if (voiceFiles.length === 0) {
-      throw httpError(400, `${levelVoiceDirName ? `Voices/${levelVoiceDirName}` : "Voices"} folder must contain files.`);
+      throw httpError(400, `Voices/${levelVoiceDirName} folder must contain files.`);
     }
 
-    const voicePathPrefix = levelVoiceDirName ? `voices/${levelVoiceDirName}` : "voices";
+    const voicePathPrefix = `voices/${levelVoiceDirName}`;
     await normalizeBookAssetPaths(bookJsonPath, book, imageFiles, voiceFiles, voicePathPrefix);
-
-    if (level === null) {
-      await rename(bookJsonPath, path.join(bookRoot, "book_level_1.json"));
-    }
   }
 }
 
