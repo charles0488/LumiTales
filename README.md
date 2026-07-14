@@ -96,6 +96,21 @@ Authenticated users and roles are stored in `data/users.sqlite3`. Set `AUTH_DATA
 
 Book uploads with `POST /books/:id` require the `admin` role. Authenticated users can read book files under `/books/...`.
 
+An uploaded zip may contain the book files at its root or inside one top-level folder. Multi-level books use this layout:
+
+```text
+book_level_1.json
+book_level_2.json
+images/page_000.png
+images/page_001.png
+voices/book_level_1/page_000.mp3
+voices/book_level_1/page_001.mp3
+voices/book_level_2/page_000.mp3
+voices/book_level_2/page_001.mp3
+```
+
+Every `book_level_<n>.json` must have a matching `voices/book_level_<n>` folder, and each page must resolve to an image plus a same-named `.mp3` for that level. The uploader normalizes page image and audio paths. Legacy single-level packages containing `book.json` and a flat `voices` folder are converted to level 1 during upload.
+
 Admins can create API tokens for scripted uploads:
 
 ```sh

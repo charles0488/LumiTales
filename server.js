@@ -289,30 +289,25 @@ async function unzipBook(zipPath, extractDir) {
 }
 
 async function findBookRoot(extractDir) {
-  try {
-    await stat(path.join(extractDir, "book.json"));
+  if (await containsBookJson(extractDir)) {
     return extractDir;
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      throw error;
-    }
   }
 
   const entries = await readdir(extractDir, { withFileTypes: true });
   const directories = entries.filter((entry) => entry.isDirectory() && !entry.name.startsWith("__MACOSX"));
   if (directories.length === 1) {
     const nestedRoot = path.join(extractDir, directories[0].name);
-    try {
-      await stat(path.join(nestedRoot, "book.json"));
+    if (await containsBookJson(nestedRoot)) {
       return nestedRoot;
-    } catch (error) {
-      if (error.code !== "ENOENT") {
-        throw error;
-      }
     }
   }
 
-  throw httpError(400, "Book upload must contain book.json at the zip root or inside one top-level folder.");
+  throw httpError(400, "Book upload must contain book_level_<n>.json (or legacy book.json) at the zip root or inside one top-level folder.");
+}
+
+async function containsBookJson(dirPath) {
+  const entries = await readdir(dirPath, { withFileTypes: true });
+  return entries.some((entry) => entry.isFile() && (/^book_level_\d+\.json$/.test(entry.name) || entry.name === "book.json"));
 }
 
 async function assertDirectory(dirPath, label) {
@@ -339,19 +334,6 @@ async function directFileNames(dirPath) {
 
 function fileStem(fileName) {
   return path.basename(fileName, path.extname(fileName));
-}
-
-function compareAssetFiles(imageFiles, voiceFiles) {
-  const imageStems = new Set(imageFiles.map(fileStem));
-  const voiceNames = new Set(voiceFiles);
-  const voiceStems = new Set(voiceFiles.map(fileStem));
-  const missingVoices = [...imageStems].filter((stem) => !voiceNames.has(`${stem}.mp3`));
-  const missingImages = [...voiceStems].filter((stem) => !imageStems.has(stem));
-  const nonMp3Voices = voiceFiles.filter((fileName) => path.extname(fileName).toLowerCase() !== ".mp3");
-
-  if (missingVoices.length > 0 || missingImages.length > 0 || nonMp3Voices.length > 0) {
-    throw httpError(400, "Each image file must have a matching .mp3 file in voices, for example images/page_002.png requires voices/page_002.mp3.");
-  }
 }
 
 function imageFileForPage(page, imageFiles) {
@@ -382,7 +364,7 @@ function voiceFileForPage(page, voiceFiles) {
   return configuredName;
 }
 
-async function normalizeBookAssetPaths(bookJsonPath, book, imageFiles, voiceFiles) {
+async function normalizeBookAssetPaths(bookJsonPath, book, imageFiles, voiceFiles, voicePathPrefix = "voices") {
   if (!Array.isArray(book.pages)) {
     return;
   }
@@ -397,13 +379,16 @@ async function normalizeBookAssetPaths(bookJsonPath, book, imageFiles, voiceFile
 
     const imageFile = imageFileForPage(page, imageFiles);
     const voiceFile = voiceFileForPage(page, voiceFiles);
-    if (!imageFile || !voiceFile) {
-      throw httpError(400, "Each book page must have an image path, audio path, or page_number.");
+    if (!imageFile || !imageFiles.includes(imageFile)) {
+      throw httpError(400, `Page ${page.page_number ?? "with no number"} references an image that is missing from images.`);
+    }
+    if (!voiceFile || !voiceFiles.includes(voiceFile) || path.extname(voiceFile).toLowerCase() !== ".mp3") {
+      throw httpError(400, `Page ${page.page_number ?? "with no number"} must have a matching .mp3 file in ${voicePathPrefix}.`);
     }
 
     page.image.path = `images/${imageFile}`;
     page.image.filename = imageFile;
-    page.audio.path = `voices/${voiceFile}`;
+    page.audio.path = `${voicePathPrefix}/${voiceFile}`;
     page.audio.filename = voiceFile;
   }
 
@@ -411,31 +396,67 @@ async function normalizeBookAssetPaths(bookJsonPath, book, imageFiles, voiceFile
 }
 
 async function validateBookUpload(bookRoot) {
-  const bookJsonPath = path.join(bookRoot, "book.json");
   const imagesDir = path.join(bookRoot, "images");
   const voicesDir = path.join(bookRoot, "voices");
-  let book;
-
-  try {
-    book = JSON.parse(await readFile(bookJsonPath, "utf8"));
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      throw httpError(400, "Book upload must contain book.json.");
-    }
-    throw httpError(400, "book.json must be valid JSON.");
-  }
 
   await assertDirectory(imagesDir, "images");
   await assertDirectory(voicesDir, "voices");
 
   const imageFiles = await directFileNames(imagesDir);
-  const voiceFiles = await directFileNames(voicesDir);
-  if (imageFiles.length === 0 || voiceFiles.length === 0) {
-    throw httpError(400, "Images and voices folders must contain files.");
+  if (imageFiles.length === 0) {
+    throw httpError(400, "Images folder must contain files.");
   }
 
-  compareAssetFiles(imageFiles, voiceFiles);
-  await normalizeBookAssetPaths(bookJsonPath, book, imageFiles, voiceFiles);
+  const rootEntries = await readdir(bookRoot, { withFileTypes: true });
+  const levelFiles = rootEntries
+    .filter((entry) => entry.isFile())
+    .map((entry) => ({ entry, match: entry.name.match(/^book_level_(\d+)\.json$/) }))
+    .filter(({ match }) => match && Number(match[1]) > 0)
+    .sort((a, b) => Number(a.match[1]) - Number(b.match[1]));
+
+  for (const { entry, match } of levelFiles) {
+    const level = Number(match[1]);
+    if (entry.name !== `book_level_${level}.json`) {
+      throw httpError(400, `Reading level filename must be book_level_${level}.json.`);
+    }
+  }
+
+  // Keep accepting the original single-level package shape, but new uploads
+  // should use book_level_<n>.json so the reader can discover their levels.
+  const bookFiles = levelFiles.length > 0
+    ? levelFiles.map(({ entry, match }) => ({ fileName: entry.name, level: Number(match[1]) }))
+    : rootEntries.some((entry) => entry.isFile() && entry.name === "book.json")
+      ? [{ fileName: "book.json", level: null }]
+      : [];
+
+  if (bookFiles.length === 0) {
+    throw httpError(400, "Book upload must contain at least one book_level_<n>.json file.");
+  }
+
+  for (const { fileName, level } of bookFiles) {
+    const bookJsonPath = path.join(bookRoot, fileName);
+    let book;
+    try {
+      book = JSON.parse(await readFile(bookJsonPath, "utf8"));
+    } catch (error) {
+      throw httpError(400, `${fileName} must be valid JSON.`);
+    }
+
+    const levelVoiceDirName = level === null ? null : `book_level_${level}`;
+    const levelVoicesDir = levelVoiceDirName ? path.join(voicesDir, levelVoiceDirName) : voicesDir;
+    await assertDirectory(levelVoicesDir, levelVoiceDirName ? `voices/${levelVoiceDirName}` : "voices");
+    const voiceFiles = await directFileNames(levelVoicesDir);
+    if (voiceFiles.length === 0) {
+      throw httpError(400, `${levelVoiceDirName ? `Voices/${levelVoiceDirName}` : "Voices"} folder must contain files.`);
+    }
+
+    const voicePathPrefix = levelVoiceDirName ? `voices/${levelVoiceDirName}` : "voices";
+    await normalizeBookAssetPaths(bookJsonPath, book, imageFiles, voiceFiles, voicePathPrefix);
+
+    if (level === null) {
+      await rename(bookJsonPath, path.join(bookRoot, "book_level_1.json"));
+    }
+  }
 }
 
 async function installBookUpload(bookId, bookRoot) {
