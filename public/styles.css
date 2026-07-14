@@ -50,7 +50,7 @@ button {
   left: 24px;
   z-index: 30;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 16px;
   width: min(340px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
@@ -61,39 +61,6 @@ button {
   pointer-events: none;
   transform: translateX(calc(-100% - 32px));
   transition: opacity 160ms ease, transform 180ms ease;
-}
-
-.account-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #f7fbf8;
-}
-
-.account-row span {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 0.88rem;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.account-row button {
-  min-height: 36px;
-  padding: 0 12px;
-  background: #edf4ef;
-  color: var(--primary-strong);
-  font-size: 0.86rem;
-}
-
-.account-row button:hover {
-  background: #dfeee8;
 }
 
 .is-shelf-open .bookshelf {
@@ -111,6 +78,18 @@ button {
   padding: 0 16px;
   box-shadow: 0 10px 24px rgba(31, 41, 51, 0.16);
 }
+
+.profile-control { position: absolute; top: 16px; right: 16px; z-index: 5; }
+.profile-toggle { min-width: 76px; min-height: 44px; padding: 0 14px; box-shadow: 0 10px 24px rgba(31, 41, 51, 0.16); }
+.profile-menu { position: absolute; top: 52px; right: 0; display: grid; gap: 10px; width: min(280px, calc(100vw - 48px)); padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.96); box-shadow: var(--shadow); user-select: text; }
+.profile-menu[hidden] { display: none; }
+.profile-label, .profile-name, .profile-email { margin: 0; }
+.profile-label { color: var(--primary-strong); font-size: .75rem; font-weight: 900; text-transform: uppercase; }
+.profile-name { font-size: 1.05rem; font-weight: 850; overflow-wrap: anywhere; }
+.profile-email { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+.profile-level { display: grid; gap: 6px; color: var(--muted); font-size: .82rem; font-weight: 800; }
+.profile-level select { min-height: 40px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; background: #fff; color: var(--ink); font: inherit; }
+.profile-menu form button { width: 100%; background: #edf4ef; color: var(--primary-strong); }
 
 .bookshelf-scrim {
   position: fixed;
@@ -364,7 +343,7 @@ button {
 .book-meta {
   position: absolute;
   top: 10px;
-  right: 10px;
+  right: 102px;
   z-index: 3;
   display: grid;
   grid-template-columns: auto 0fr;
@@ -618,9 +597,11 @@ button:disabled {
 
   .book-meta {
     top: 6px;
-    right: 6px;
+    right: 96px;
     max-width: calc(100% - 112px);
   }
+
+  .profile-control { top: 10px; right: 10px; }
 
   .book-meta-label {
     width: 40px;

@@ -17,14 +17,19 @@ const elements = {
   autoAdvance: document.querySelector("#autoAdvance"),
   askQuestions: document.querySelector("#askQuestions"),
   status: document.querySelector("#playbackStatus"),
-  accountName: document.querySelector("#accountName")
+  accountName: document.querySelector("#accountName"),
+  accountEmail: document.querySelector("#accountEmail"),
+  profileToggle: document.querySelector("#profileToggle"),
+  profileMenu: document.querySelector("#profileMenu"),
+  profileLevel: document.querySelector("#profileLevel")
 };
 
-const questionDelayMs = 30000;
+const questionDelayMs = 10000;
 
 let books = [];
 let book;
 let bookId;
+let readingLevel = Number(localStorage.getItem("lumitales-reading-level")) || 1;
 let currentIndex = 0;
 let isReading = false;
 let statusTimer;
@@ -133,7 +138,7 @@ function renderPage({ playAudio = isReading } = {}) {
   const page = currentPage();
   clearPlaybackQueue();
   elements.title.textContent = book.title;
-  elements.pageCount.textContent = `Page ${currentIndex + 1} of ${book.pages.length}`;
+  elements.pageCount.textContent = `Level ${readingLevel} · Page ${currentIndex + 1} of ${book.pages.length}`;
   elements.image.src = assetPath(page.image);
   elements.image.alt = `${book.title}, page ${page.page_number}`;
   elements.audio.src = audioPath(page);
@@ -186,7 +191,7 @@ function renderShelf() {
 
       const meta = document.createElement("span");
       meta.className = "book-card-meta";
-      meta.textContent = `${shelfBook.pageCount} pages`;
+      meta.textContent = `${shelfBook.pageCount} pages · Levels ${shelfBook.levels.join(", ")}`;
 
       button.append(cover, title, meta);
       button.addEventListener("click", () => {
@@ -370,15 +375,23 @@ async function selectBook(nextBookId, { updateUrl = true } = {}) {
   renderShelf();
 
   try {
-    const response = await fetch(`/api/books/${bookId}`);
+    const shelfBook = books.find((candidate) => candidate.id === bookId);
+    const availableLevels = shelfBook?.levels || [];
+    if (!availableLevels.includes(readingLevel)) {
+      readingLevel = availableLevels[0];
+    }
+    const response = await fetch(`/api/books/${bookId}?level=${readingLevel}`);
     if (!response.ok) {
       throw new Error("Book not found.");
     }
     book = await response.json();
+    readingLevel = book.level;
     book.pages.sort((a, b) => a.page_number - b.page_number);
+    elements.profileLevel.value = String(readingLevel);
     if (updateUrl) {
       const url = new URL(window.location.href);
       url.searchParams.set("book", bookId);
+      url.searchParams.set("level", String(readingLevel));
       window.history.replaceState({}, "", url);
     }
     renderPage({ playAudio: false });
@@ -463,7 +476,7 @@ elements.audio.addEventListener("ended", () => {
 elements.imageFrame.addEventListener("click", (event) => {
   if (
     event.target.closest(".playback-pane") ||
-    event.target.closest(".bookshelf-toggle, .book-meta")
+    event.target.closest(".bookshelf-toggle, .book-meta, .profile-control")
   ) {
     return;
   }
@@ -492,10 +505,34 @@ elements.shelfScrim.addEventListener("click", () => {
   setShelfOpen(false);
 });
 
+elements.profileLevel.addEventListener("change", () => {
+  readingLevel = Number(elements.profileLevel.value);
+  localStorage.setItem("lumitales-reading-level", String(readingLevel));
+  selectBook(bookId);
+});
+
+elements.profileToggle.addEventListener("click", (event) => {
+  const isOpen = elements.profileMenu.hidden;
+  elements.profileMenu.hidden = !isOpen;
+  elements.profileToggle.setAttribute("aria-expanded", String(isOpen));
+  event.stopPropagation();
+});
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".profile-control")) {
+    elements.profileMenu.hidden = true;
+    elements.profileToggle.setAttribute("aria-expanded", "false");
+  }
+});
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && isShelfOpen) {
     setShelfOpen(false);
     elements.shelfToggle.focus();
+    return;
+  }
+
+  if (event.target.closest("button, input, select, a")) {
     return;
   }
 
@@ -523,6 +560,7 @@ async function init() {
     if (meResponse.ok) {
       const { user } = await meResponse.json();
       elements.accountName.textContent = user?.name || user?.email || "Signed in";
+      elements.accountEmail.textContent = user?.email && user.email !== user?.name ? user.email : "";
     }
 
     const response = await fetch("/api/books");
@@ -532,6 +570,11 @@ async function init() {
     books = await response.json();
     renderShelf();
     const requestedBookId = new URLSearchParams(window.location.search).get("book");
+    const requestedLevel = Number(new URLSearchParams(window.location.search).get("level"));
+    if (Number.isInteger(requestedLevel) && requestedLevel > 0) {
+      readingLevel = requestedLevel;
+    }
+    elements.profileLevel.value = String(readingLevel);
     const firstBookId = books.some((shelfBook) => shelfBook.id === requestedBookId)
       ? requestedBookId
       : books[0]?.id;

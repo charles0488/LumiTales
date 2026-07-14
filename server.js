@@ -179,12 +179,35 @@ function validateBookId(bookId) {
   }
 }
 
-async function loadBook(bookId) {
+async function availableBookLevels(bookId) {
   validateBookId(bookId);
 
-  const bookPath = path.join(booksDir, bookId, "book.json");
+  const entries = await readdir(path.join(booksDir, bookId), { withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name.match(/^book_level_(\d+)\.json$/))
+    .filter(Boolean)
+    .map((match) => Number(match[1]))
+    .filter((level) => Number.isInteger(level) && level > 0)
+    .sort((a, b) => a - b);
+}
+
+async function loadBook(bookId, requestedLevel) {
+  validateBookId(bookId);
+
+  const levels = await availableBookLevels(bookId);
+  if (levels.length === 0) {
+    throw httpError(404, "Book has no reading levels.");
+  }
+
+  const level = requestedLevel === undefined ? levels[0] : Number(requestedLevel);
+  if (!Number.isInteger(level) || !levels.includes(level)) {
+    throw httpError(404, "Reading level not found.");
+  }
+
+  const bookPath = path.join(booksDir, bookId, `book_level_${level}.json`);
   const raw = await readFile(bookPath, "utf8");
-  return { book: JSON.parse(raw), bookPath };
+  return { book: JSON.parse(raw), bookPath, level, levels };
 }
 
 async function listBooks() {
@@ -194,13 +217,14 @@ async function listBooks() {
       .filter((entry) => entry.isDirectory())
       .map(async (entry) => {
         try {
-          const { book } = await loadBook(entry.name);
+          const { book, levels } = await loadBook(entry.name);
           const pages = [...(book.pages || [])].sort((a, b) => a.page_number - b.page_number);
           return {
             id: entry.name,
             title: book.title || entry.name,
             pageCount: pages.length,
-            cover: pages[0]?.image || null
+            cover: pages[0]?.image || null,
+            levels
           };
         } catch (error) {
           logger.warn("Skipping invalid book while listing books", { bookId: entry.name, error });
@@ -468,11 +492,12 @@ async function handleApi(req, res) {
     return true;
   }
 
-  const bookMatch = req.url.match(/^\/api\/books\/([^/?#]+)$/);
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const bookMatch = url.pathname.match(/^\/api\/books\/([^/?#]+)$/);
 
   if (req.method === "GET" && bookMatch) {
-    const { book } = await loadBook(bookMatch[1]);
-    sendJson(res, 200, book);
+    const { book, level, levels } = await loadBook(bookMatch[1], url.searchParams.get("level") ?? undefined);
+    sendJson(res, 200, { ...book, level, levels });
     return true;
   }
 
