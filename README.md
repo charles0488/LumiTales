@@ -31,7 +31,17 @@ export SESSION_SECRET="replace-with-a-long-random-secret"
 export PUBLIC_BASE_URL="http://localhost:3000"
 ```
 
-For local sign-in, open `/signup` to create an account with an email address and password. The app sends a confirmation link, and users must confirm their email before signing in at `/login`. The first created account in an empty auth database is assigned the `admin` role; later accounts are assigned the `user` role. Passwords are stored as salted `scrypt` hashes in `data/users.sqlite3`.
+For local sign-in, open `/signup` to create an account with an email address and password. The app sends a confirmation link, and users must confirm their email before signing in at `/login`. The first created account in an empty auth database is assigned the `admin` role; later accounts are assigned the `parent` role. Accounts explicitly assigned the `kid` role are locked to reading mode. Passwords are stored as salted `scrypt` hashes in `data/users.sqlite3`.
+
+Parents use **Parent library** to check out up to five books from the `books` folder. Checkouts and returns are recorded in the `book_checkouts` table. Kid reading mode only serves books that are currently checked out; when five are active, a book must be returned before another can be added.
+
+All books currently loaded from `books/` are treated as Public Library titles. They can be checked out directly and always show either **Check out** or **Return**. Parent Library also includes a separate Family Library section marked as coming soon; private creation, storage, and ordering behavior will be defined later.
+
+Shared accounts open in Kid Reading mode after every login or refresh. The first adult entering Parent Library creates a 4–8 digit parent PIN. That PIN is required by both the interface and checkout APIs, is stored as a salted `scrypt` hash, and is cleared from the browser when Parent mode closes or after five minutes of inactivity.
+
+While Parent mode is unlocked, the Profile menu can change the parent PIN. The reset endpoint verifies the current PIN before replacing its salted hash.
+
+If the PIN is forgotten, **Forgot PIN?** on the Parents Only gate verifies the local account password before accepting a new PIN. Five failed password attempts lock recovery for five minutes.
 
 By default, confirmation and password reset emails are printed to the server console for local development. For real delivery, configure Resend or SMTP.
 

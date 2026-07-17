@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { createAuth } from "./auth.js";
 import { createLogger } from "./logger.js";
+import { createLibraryStore } from "./library.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
@@ -17,7 +18,12 @@ const execFileAsync = promisify(execFile);
 const maxBookUploadSize = 50 * 1024 * 1024;
 const logger = createLogger({ service: "lumitales" });
 const auth = createAuth({ baseDir: __dirname, logger: logger.child({ component: "auth" }) });
+const library = createLibraryStore({ baseDir: __dirname });
 let nextRequestId = 1;
+const parentPinAttempts = new Map();
+const parentPasswordAttempts = new Map();
+const maxParentPinAttempts = 5;
+const parentPinLockMs = 5 * 60 * 1000;
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -25,6 +31,9 @@ const mimeTypes = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
   ".mp3": "audio/mpeg"
 };
 
@@ -117,6 +126,51 @@ async function readBinaryRequestBody(req, maxSize) {
   }
 
   return Buffer.concat(chunks);
+}
+
+async function readJsonRequestBody(req, maxSize = 64 * 1024) {
+  const body = await readBinaryRequestBody(req, maxSize);
+  if (!body.length) return {};
+  try {
+    return JSON.parse(body.toString("utf8"));
+  } catch {
+    throw httpError(400, "Request body must be valid JSON.");
+  }
+}
+
+function isParent(user) {
+  return user?.role === "parent" || user?.role === "admin";
+}
+
+function requireParent(req) {
+  if (!isParent(req.user)) {
+    throw httpError(403, "Parent access required.");
+  }
+}
+
+async function requireParentPin(req) {
+  requireParent(req);
+  await verifyParentPinWithLimit(req.user.id, req.headers["x-parent-pin"]);
+}
+
+async function verifyParentPinWithLimit(userId, pin) {
+  const attempt = parentPinAttempts.get(userId);
+  if (attempt?.lockedUntil > Date.now()) {
+    throw httpError(429, "Too many incorrect PIN attempts. Try again in 5 minutes.");
+  }
+  if (await library.verifyParentPin(userId, pin)) {
+    parentPinAttempts.delete(userId);
+    return;
+  }
+  const failures = (attempt?.failures || 0) + 1;
+  parentPinAttempts.set(userId, {
+    failures,
+    lockedUntil: failures >= maxParentPinAttempts ? Date.now() + parentPinLockMs : 0
+  });
+  if (failures >= maxParentPinAttempts) {
+    throw httpError(429, "Too many incorrect PIN attempts. Try again in 5 minutes.");
+  }
+  throw httpError(403, "Incorrect parent PIN.");
 }
 
 function multipartBoundary(contentType) {
@@ -502,14 +556,126 @@ async function handleBookUpload(req, res) {
 
 async function handleApi(req, res) {
   if (req.method === "GET" && req.url.match(/^\/api\/books\/?$/)) {
-    sendJson(res, 200, await listBooks());
+    const activeIds = new Set(await library.activeBookIds(req.user.id));
+    sendJson(res, 200, (await listBooks()).filter((book) => activeIds.has(book.id)));
     return true;
   }
 
   const url = new URL(req.url, `http://${req.headers.host}`);
+  if (req.method === "GET" && url.pathname === "/api/parent-pin") {
+    requireParent(req);
+    sendJson(res, 200, await library.parentPinStatus(req.user.id));
+    return true;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/parent-pin") {
+    requireParent(req);
+    const { pin } = await readJsonRequestBody(req);
+    await library.setParentPin(req.user.id, pin);
+    sendJson(res, 201, { configured: true });
+    return true;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/parent-pin/verify") {
+    requireParent(req);
+    const { pin } = await readJsonRequestBody(req);
+    await verifyParentPinWithLimit(req.user.id, pin);
+    sendJson(res, 200, { ok: true });
+    return true;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/parent-pin/reset") {
+    await requireParentPin(req);
+    const { pin } = await readJsonRequestBody(req);
+    await library.resetParentPin(req.user.id, pin);
+    parentPinAttempts.delete(req.user.id);
+    sendJson(res, 200, { ok: true });
+    return true;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/parent-pin/forgot") {
+    requireParent(req);
+    const attempt = parentPasswordAttempts.get(req.user.id);
+    if (attempt?.lockedUntil > Date.now()) throw httpError(429, "Too many incorrect password attempts. Try again in 5 minutes.");
+    const { password, pin } = await readJsonRequestBody(req);
+    if (!(await auth.verifyUserPassword(req.user.id, password))) {
+      const failures = (attempt?.failures || 0) + 1;
+      parentPasswordAttempts.set(req.user.id, {
+        failures,
+        lockedUntil: failures >= maxParentPinAttempts ? Date.now() + parentPinLockMs : 0
+      });
+      throw httpError(failures >= maxParentPinAttempts ? 429 : 403,
+        failures >= maxParentPinAttempts ? "Too many incorrect password attempts. Try again in 5 minutes." : "Incorrect account password.");
+    }
+    parentPasswordAttempts.delete(req.user.id);
+    await library.resetParentPin(req.user.id, pin);
+    parentPinAttempts.delete(req.user.id);
+    sendJson(res, 200, { ok: true });
+    return true;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/library") {
+    await requireParentPin(req);
+    const activeIds = new Set(await library.activeBookIds(req.user.id));
+    sendJson(res, 200, {
+      limit: 5,
+      checkoutCount: activeIds.size,
+      remainingCheckoutSlots: Math.max(0, 5 - activeIds.size),
+      books: (await listBooks()).map((book) => ({
+        ...book,
+        owned: false,
+        checkedOut: activeIds.has(book.id)
+      }))
+    });
+    return true;
+  }
+
+  const libraryCoverMatch = url.pathname.match(/^\/api\/library\/([^/?#]+)\/cover$/);
+  if (req.method === "GET" && libraryCoverMatch) {
+    await requireParentPin(req);
+    const requestedBookId = libraryCoverMatch[1];
+    validateBookId(requestedBookId);
+    const catalogBook = (await listBooks()).find((book) => book.id === requestedBookId);
+    const coverPath = catalogBook?.cover?.path?.replace(/^\.\//, "");
+    if (!coverPath) throw httpError(404, "Cover not found.");
+    const bookRoot = path.join(booksDir, requestedBookId);
+    const filePath = path.resolve(bookRoot, coverPath);
+    if (!filePath.startsWith(`${bookRoot}${path.sep}`)) throw httpError(404, "Cover not found.");
+    const fileStat = await stat(filePath);
+    if (!fileStat.isFile()) throw httpError(404, "Cover not found.");
+    sendFileRange(req, res, filePath, fileStat, mimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream");
+    return true;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/checkouts") {
+    await requireParentPin(req);
+    const { bookIds } = await readJsonRequestBody(req);
+    if (!Array.isArray(bookIds) || bookIds.some((id) => typeof id !== "string")) {
+      throw httpError(400, "bookIds must be an array of book ids.");
+    }
+    const availableIds = new Set((await listBooks()).map((book) => book.id));
+    if (bookIds.some((id) => !availableIds.has(id))) {
+      throw httpError(404, "One or more books were not found.");
+    }
+    sendJson(res, 201, { bookIds: await library.checkout(req.user.id, bookIds) });
+    return true;
+  }
+
+  const returnMatch = url.pathname.match(/^\/api\/checkouts\/([^/?#]+)\/return$/);
+  if (req.method === "POST" && returnMatch) {
+    await requireParentPin(req);
+    validateBookId(returnMatch[1]);
+    sendJson(res, 200, { bookIds: await library.returnBook(req.user.id, returnMatch[1]) });
+    return true;
+  }
+
   const bookMatch = url.pathname.match(/^\/api\/books\/([^/?#]+)$/);
 
   if (req.method === "GET" && bookMatch) {
+    const activeIds = await library.activeBookIds(req.user.id);
+    if (!activeIds.includes(bookMatch[1])) {
+      throw httpError(403, "This book must be checked out by a parent before it can be read.");
+    }
     const { book, level, levels } = await loadBook(bookMatch[1], url.searchParams.get("level") ?? undefined);
     sendJson(res, 200, { ...book, level, levels });
     return true;
@@ -544,6 +710,18 @@ async function serveStatic(req, res) {
     }
     sendJson(res, 404, { error: "Not found" });
   }
+}
+
+async function requireOwnedBookAsset(req, res, pathname) {
+  const match = pathname.match(/^\/books\/([^/]+)\//);
+  if (!match || req.method !== "GET") return true;
+  try {
+    validateBookId(match[1]);
+    const activeIds = await library.activeBookIds(req.user.id);
+    if (activeIds.includes(match[1])) return true;
+  } catch {}
+  sendJson(res, 404, { error: "Not found" });
+  return false;
 }
 
 const server = createServer(async (req, res) => {
@@ -593,6 +771,8 @@ const server = createServer(async (req, res) => {
     if (req.url.startsWith("/api/") && (await handleApi(req, res))) {
       return;
     }
+
+    if (!(await requireOwnedBookAsset(req, res, url.pathname))) return;
 
     await serveStatic(req, res);
   } catch (error) {

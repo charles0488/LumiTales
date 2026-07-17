@@ -8,8 +8,103 @@
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <nav id="modeNav" class="mode-nav" aria-label="App mode" hidden>
+      <button id="readingModeButton" type="button">Kid reading</button>
+      <button id="parentModeButton" type="button">Parent library</button>
+    </nav>
+    <div class="profile-control" hidden>
+      <button id="profileToggle" class="profile-toggle" type="button" aria-expanded="false" aria-controls="profileMenu">Profile</button>
+      <section id="profileMenu" class="profile-menu" aria-label="Profile" hidden>
+        <p class="profile-label">Profile</p>
+        <p id="accountName" class="profile-name">Signed in</p>
+        <p id="accountEmail" class="profile-email"></p>
+        <p id="accountRole" class="profile-role"></p>
+        <label class="profile-level" for="profileLevel">
+          <span>Default reading level</span>
+          <select id="profileLevel">
+            <option value="1">Level 1</option>
+            <option value="2">Level 2</option>
+            <option value="3">Level 3</option>
+            <option value="4">Level 4</option>
+            <option value="5">Level 5</option>
+          </select>
+        </label>
+        <button id="resetPinButton" class="profile-secondary-button" type="button">Change parent PIN</button>
+        <form id="resetPinForm" class="reset-pin-form" hidden>
+          <label>
+            <span>New PIN</span>
+            <input id="newParentPin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" autocomplete="new-password" required>
+          </label>
+          <label>
+            <span>Confirm new PIN</span>
+            <input id="confirmNewParentPin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" autocomplete="new-password" required>
+          </label>
+          <p id="resetPinStatus" class="profile-form-status" role="status"></p>
+          <button type="submit">Save new PIN</button>
+        </form>
+        <form id="logoutForm" action="/logout" method="post">
+          <button type="submit">Sign out</button>
+        </form>
+      </section>
+    </div>
+    <div id="parentGate" class="parent-gate" hidden>
+      <form id="parentGateForm" class="parent-gate-card">
+        <p class="library-kicker">Parents only</p>
+        <h1 id="parentGateTitle">Enter parent PIN</h1>
+        <p id="parentGateHint">Enter your PIN to open Parent Library.</p>
+        <label>
+          <span id="parentGateLabel">Parent PIN</span>
+          <input id="parentPin" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" autocomplete="off" required>
+        </label>
+        <label id="parentPinConfirmationLabel" hidden>
+          <span>Confirm PIN</span>
+          <input id="parentPinConfirmation" type="password" inputmode="numeric" pattern="[0-9]{4,8}" minlength="4" maxlength="8" autocomplete="off">
+        </label>
+        <label id="parentPasswordLabel" hidden>
+          <span>Account password</span>
+          <input id="parentAccountPassword" type="password" autocomplete="current-password">
+        </label>
+        <p id="parentGateStatus" class="library-status" role="status"></p>
+        <div class="parent-gate-actions">
+          <button id="parentGateCancel" type="button">Cancel</button>
+          <button type="submit">Continue</button>
+        </div>
+        <button id="forgotParentPinButton" class="parent-gate-link" type="button">Forgot PIN?</button>
+      </form>
+    </div>
+    <section id="libraryView" class="library-view" hidden aria-labelledby="libraryTitle">
+      <header class="library-header">
+        <div>
+          <p class="library-kicker">Parent mode</p>
+          <h1 id="libraryTitle">Parent library</h1>
+          <p>Choose public books for Kid Reading or start creating private books for your family.</p>
+        </div>
+        <p id="librarySelectionCount" class="library-count">0 of 5 checked out</p>
+      </header>
+      <p id="libraryStatus" class="library-status" role="status"></p>
+      <section class="library-section" aria-labelledby="publicLibraryTitle">
+        <div class="library-section-heading">
+          <div>
+            <p class="library-kicker">Included collection</p>
+            <h2 id="publicLibraryTitle">Public Library</h2>
+          </div>
+          <p>Books available to every family</p>
+        </div>
+        <div id="libraryGrid" class="library-grid"></div>
+      </section>
+      <section class="library-section family-library" aria-labelledby="familyLibraryTitle">
+        <div class="library-section-heading">
+          <div>
+            <p class="library-kicker">Your private collection</p>
+            <h2 id="familyLibraryTitle">Family Library</h2>
+          </div>
+          <p>Make a story that belongs to your family</p>
+        </div>
+        <p class="family-coming-soon">Coming soon…</p>
+      </section>
+    </section>
     <div id="bookshelfScrim" class="bookshelf-scrim" hidden></div>
-    <main class="reader-shell">
+    <main id="readerView" class="reader-shell">
       <aside id="bookshelfPanel" class="bookshelf" aria-label="Bookshelf">
         <div class="bookshelf-heading">
           <h1>Bookshelf</h1>
@@ -22,27 +117,6 @@
       <section class="stage" aria-label="Book page">
         <div class="image-frame">
           <button id="bookshelfToggle" class="bookshelf-toggle" type="button" aria-expanded="false" aria-controls="bookshelfPanel">Books</button>
-          <div class="profile-control">
-            <button id="profileToggle" class="profile-toggle" type="button" aria-expanded="false" aria-controls="profileMenu">Profile</button>
-            <section id="profileMenu" class="profile-menu" aria-label="Profile" hidden>
-              <p class="profile-label">Profile</p>
-              <p id="accountName" class="profile-name">Signed in</p>
-              <p id="accountEmail" class="profile-email"></p>
-              <label class="profile-level" for="profileLevel">
-                <span>Default reading level</span>
-                <select id="profileLevel">
-                  <option value="1">Level 1</option>
-                  <option value="2">Level 2</option>
-                  <option value="3">Level 3</option>
-                  <option value="4">Level 4</option>
-                  <option value="5">Level 5</option>
-                </select>
-              </label>
-              <form id="logoutForm" action="/logout" method="post">
-                <button type="submit">Sign out</button>
-              </form>
-            </section>
-          </div>
           <div class="book-meta" tabindex="0" aria-label="Book information">
             <span class="book-meta-label">ⓘ</span>
             <div class="book-meta-details">

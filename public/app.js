@@ -21,7 +21,35 @@ const elements = {
   accountEmail: document.querySelector("#accountEmail"),
   profileToggle: document.querySelector("#profileToggle"),
   profileMenu: document.querySelector("#profileMenu"),
-  profileLevel: document.querySelector("#profileLevel")
+  profileLevel: document.querySelector("#profileLevel"),
+  accountRole: document.querySelector("#accountRole"),
+  modeNav: document.querySelector("#modeNav"),
+  readingModeButton: document.querySelector("#readingModeButton"),
+  parentModeButton: document.querySelector("#parentModeButton"),
+  readerView: document.querySelector("#readerView"),
+  libraryView: document.querySelector("#libraryView"),
+  libraryGrid: document.querySelector("#libraryGrid"),
+  librarySelectionCount: document.querySelector("#librarySelectionCount"),
+  libraryStatus: document.querySelector("#libraryStatus"),
+  parentGate: document.querySelector("#parentGate"),
+  parentGateForm: document.querySelector("#parentGateForm"),
+  parentGateTitle: document.querySelector("#parentGateTitle"),
+  parentGateHint: document.querySelector("#parentGateHint"),
+  parentGateLabel: document.querySelector("#parentGateLabel"),
+  parentPin: document.querySelector("#parentPin"),
+  parentPinConfirmation: document.querySelector("#parentPinConfirmation"),
+  parentPinConfirmationLabel: document.querySelector("#parentPinConfirmationLabel"),
+  parentPasswordLabel: document.querySelector("#parentPasswordLabel"),
+  parentAccountPassword: document.querySelector("#parentAccountPassword"),
+  forgotParentPinButton: document.querySelector("#forgotParentPinButton"),
+  parentGateStatus: document.querySelector("#parentGateStatus"),
+  parentGateCancel: document.querySelector("#parentGateCancel"),
+  profileControl: document.querySelector(".profile-control"),
+  resetPinButton: document.querySelector("#resetPinButton"),
+  resetPinForm: document.querySelector("#resetPinForm"),
+  newParentPin: document.querySelector("#newParentPin"),
+  confirmNewParentPin: document.querySelector("#confirmNewParentPin"),
+  resetPinStatus: document.querySelector("#resetPinStatus")
 };
 
 const questionDelayMs = 10000;
@@ -42,6 +70,157 @@ let playbackDelayTimer;
 let queueCompletion;
 let playedBeforeReadingQuestions = false;
 let playedAfterReadingQuestions = false;
+let currentUser;
+let libraryBooks = [];
+let remainingCheckoutSlots = 5;
+let parentPin = "";
+let isSettingParentPin = false;
+let isResettingForgottenPin = false;
+let parentIdleTimer;
+const libraryCoverUrls = new Map();
+const parentIdleTimeoutMs = 5 * 60 * 1000;
+
+function userIsParent() {
+  return currentUser?.role === "parent" || currentUser?.role === "admin";
+}
+
+function setMode(mode) {
+  const nextMode = mode === "parent" && userIsParent() ? "parent" : "reading";
+  elements.readerView.hidden = nextMode !== "reading";
+  elements.libraryView.hidden = nextMode !== "parent";
+  elements.readingModeButton.setAttribute("aria-current", nextMode === "reading" ? "page" : "false");
+  elements.parentModeButton.setAttribute("aria-current", nextMode === "parent" ? "page" : "false");
+  elements.profileControl.hidden = nextMode === "reading";
+  const url = new URL(window.location.href);
+  url.searchParams.set("mode", nextMode);
+  window.history.replaceState({}, "", url);
+  if (nextMode === "parent") {
+    resetParentIdleTimer();
+    loadLibrary();
+  } else {
+    lockParentMode();
+  }
+}
+
+function lockParentMode() {
+  window.clearTimeout(parentIdleTimer);
+  parentPin = "";
+  for (const objectUrl of libraryCoverUrls.values()) URL.revokeObjectURL(objectUrl);
+  libraryCoverUrls.clear();
+  elements.profileMenu.hidden = true;
+}
+
+function resetParentIdleTimer() {
+  window.clearTimeout(parentIdleTimer);
+  if (parentPin) parentIdleTimer = window.setTimeout(() => setMode("reading"), parentIdleTimeoutMs);
+}
+
+async function requestParentMode() {
+  const response = await fetch("/api/parent-pin");
+  const payload = await response.json();
+  if (!response.ok) return;
+  isSettingParentPin = !payload.configured;
+  isResettingForgottenPin = false;
+  elements.parentGateTitle.textContent = isSettingParentPin ? "Create parent PIN" : "Enter parent PIN";
+  elements.parentGateHint.textContent = isSettingParentPin
+    ? "Choose 4 to 8 digits. This PIN protects library, account, and checkout controls."
+    : "Enter your PIN to open Parent Library.";
+  elements.parentGateLabel.textContent = isSettingParentPin ? "New parent PIN" : "Parent PIN";
+  elements.parentPinConfirmationLabel.hidden = !isSettingParentPin;
+  elements.parentPinConfirmation.required = isSettingParentPin;
+  elements.parentPasswordLabel.hidden = true;
+  elements.parentAccountPassword.required = false;
+  elements.forgotParentPinButton.hidden = isSettingParentPin;
+  elements.parentPin.value = "";
+  elements.parentPinConfirmation.value = "";
+  elements.parentAccountPassword.value = "";
+  elements.parentGateStatus.textContent = "";
+  elements.parentGate.hidden = false;
+  elements.parentPin.focus();
+}
+
+function closeParentGate() {
+  elements.parentGate.hidden = true;
+  elements.parentGateStatus.textContent = "";
+}
+
+function renderLibrary() {
+  const checkedOutCount = libraryBooks.filter((item) => item.checkedOut).length;
+  elements.librarySelectionCount.textContent = `${checkedOutCount} of 5 checked out`;
+  elements.libraryGrid.replaceChildren(...libraryBooks.map((item) => {
+    const card = document.createElement("article");
+    card.className = "library-card";
+    const image = document.createElement("img");
+    image.alt = `${item.title} cover`;
+    loadLibraryCover(item, image);
+    const content = document.createElement("div");
+    const title = document.createElement("h2");
+    title.textContent = item.title;
+    const meta = document.createElement("p");
+    meta.textContent = `${item.pageCount} pages · Levels ${item.levels.join(", ")}`;
+    const action = document.createElement("button");
+    action.type = "button";
+    action.textContent = item.checkedOut ? "Return" : "Check out";
+    action.className = item.checkedOut ? "return-button" : "";
+    const checkoutUnavailable = !item.checkedOut && remainingCheckoutSlots === 0;
+    action.disabled = checkoutUnavailable;
+    if (checkoutUnavailable) action.title = "Return a checked-out book before checking out another.";
+    action.addEventListener("click", () => {
+      action.disabled = true;
+      return updateCheckout(item);
+    });
+    content.append(title, meta, action);
+    card.append(image, content);
+    return card;
+  }));
+}
+
+async function loadLibraryCover(item, image) {
+  if (libraryCoverUrls.has(item.id)) {
+    image.src = libraryCoverUrls.get(item.id);
+    return;
+  }
+  try {
+    const response = await fetch(`/api/library/${item.id}/cover`, { headers: { "x-parent-pin": parentPin } });
+    if (!response.ok) return;
+    const objectUrl = URL.createObjectURL(await response.blob());
+    libraryCoverUrls.set(item.id, objectUrl);
+    if (image.isConnected) image.src = objectUrl;
+  } catch {}
+}
+
+async function loadLibrary() {
+  elements.libraryStatus.textContent = "Loading library…";
+  try {
+    const response = await fetch("/api/library", { headers: { "x-parent-pin": parentPin } });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Could not load library.");
+    libraryBooks = payload.books;
+    remainingCheckoutSlots = payload.remainingCheckoutSlots;
+    elements.libraryStatus.textContent = "";
+    renderLibrary();
+  } catch (error) {
+    elements.libraryStatus.textContent = error.message;
+  }
+}
+
+async function updateCheckout(item) {
+  elements.libraryStatus.textContent = item.checkedOut ? `Returning ${item.title}…` : `Checking out ${item.title}…`;
+  const response = await fetch(item.checkedOut ? `/api/checkouts/${item.id}/return` : "/api/checkouts", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-parent-pin": parentPin },
+    body: item.checkedOut ? undefined : JSON.stringify({ bookIds: [item.id] })
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    elements.libraryStatus.textContent = payload.error || "Could not update checkout.";
+    renderLibrary();
+    return;
+  }
+  elements.libraryStatus.textContent = item.checkedOut ? `${item.title} returned.` : `${item.title} is ready to read.`;
+  await loadLibrary();
+  await loadBooks({ autoSelect: true, preferredBookId: item.checkedOut ? null : item.id });
+}
 
 function assetPath(asset) {
   const rawPath = asset?.path?.replace(/^\.\//, "") || "";
@@ -518,6 +697,83 @@ elements.profileToggle.addEventListener("click", (event) => {
   event.stopPropagation();
 });
 
+elements.resetPinButton.addEventListener("click", () => {
+  elements.resetPinForm.hidden = !elements.resetPinForm.hidden;
+  elements.resetPinStatus.textContent = "";
+  if (!elements.resetPinForm.hidden) elements.newParentPin.focus();
+});
+elements.resetPinForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const nextPin = elements.newParentPin.value;
+  if (nextPin !== elements.confirmNewParentPin.value) {
+    elements.resetPinStatus.textContent = "PINs do not match.";
+    return;
+  }
+  const response = await fetch("/api/parent-pin/reset", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-parent-pin": parentPin },
+    body: JSON.stringify({ pin: nextPin })
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    elements.resetPinStatus.textContent = payload.error || "Could not change PIN.";
+    return;
+  }
+  parentPin = nextPin;
+  elements.resetPinForm.reset();
+  elements.resetPinForm.hidden = true;
+  elements.resetPinStatus.textContent = "";
+  setStatus("Parent PIN changed");
+  resetParentIdleTimer();
+});
+
+elements.readingModeButton.addEventListener("click", () => setMode("reading"));
+elements.parentModeButton.addEventListener("click", requestParentMode);
+elements.parentGateCancel.addEventListener("click", closeParentGate);
+elements.forgotParentPinButton.addEventListener("click", () => {
+  isResettingForgottenPin = true;
+  elements.parentGateTitle.textContent = "Reset parent PIN";
+  elements.parentGateHint.textContent = "Verify the account password, then choose a new 4 to 8 digit PIN.";
+  elements.parentGateLabel.textContent = "New parent PIN";
+  elements.parentPinConfirmationLabel.hidden = false;
+  elements.parentPinConfirmation.required = true;
+  elements.parentPasswordLabel.hidden = false;
+  elements.parentAccountPassword.required = true;
+  elements.forgotParentPinButton.hidden = true;
+  elements.parentPin.value = "";
+  elements.parentPinConfirmation.value = "";
+  elements.parentGateStatus.textContent = "";
+  elements.parentAccountPassword.focus();
+});
+elements.parentGateForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const pin = elements.parentPin.value;
+  if ((isSettingParentPin || isResettingForgottenPin) && pin !== elements.parentPinConfirmation.value) {
+    elements.parentGateStatus.textContent = "PINs do not match.";
+    return;
+  }
+  const endpoint = isResettingForgottenPin
+    ? "/api/parent-pin/forgot"
+    : isSettingParentPin ? "/api/parent-pin" : "/api/parent-pin/verify";
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ pin, password: elements.parentAccountPassword.value })
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    elements.parentGateStatus.textContent = payload.error || "Could not unlock Parent Library.";
+    return;
+  }
+  parentPin = pin;
+  closeParentGate();
+  setMode("parent");
+});
+
+document.addEventListener("pointerdown", () => {
+  if (!elements.libraryView.hidden) resetParentIdleTimer();
+});
+
 document.addEventListener("click", (event) => {
   if (!event.target.closest(".profile-control")) {
     elements.profileMenu.hidden = true;
@@ -550,6 +806,31 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+async function loadBooks({ autoSelect = false, preferredBookId = null } = {}) {
+  const response = await fetch("/api/books");
+  if (!response.ok) throw new Error("Books not found.");
+  books = await response.json();
+  renderShelf();
+  if (!books.length) {
+    pauseAudio();
+    book = null;
+    bookId = null;
+    elements.title.textContent = userIsParent() ? "Choose books in Parent library" : "No books are ready yet";
+    elements.pageCount.textContent = userIsParent() ? "Switch modes to check out up to 5 books." : "Ask a parent to check out a book.";
+    elements.image.removeAttribute("src");
+    updateNavigation();
+    return;
+  }
+  if (bookId && !books.some((item) => item.id === bookId)) {
+    bookId = null;
+    book = null;
+  }
+  if (autoSelect && !book) {
+    const nextBookId = books.some((item) => item.id === preferredBookId) ? preferredBookId : books[0].id;
+    await selectBook(nextBookId);
+  }
+}
+
 async function init() {
   elements.shelfPanel.setAttribute("tabindex", "-1");
   setShelfOpen(false);
@@ -559,16 +840,15 @@ async function init() {
     const meResponse = await fetch("/api/me");
     if (meResponse.ok) {
       const { user } = await meResponse.json();
+      currentUser = user;
       elements.accountName.textContent = user?.name || user?.email || "Signed in";
       elements.accountEmail.textContent = user?.email && user.email !== user?.name ? user.email : "";
+      elements.accountRole.textContent = userIsParent() ? "Parent account" : "Kid account · reading only";
+      elements.modeNav.hidden = false;
+      elements.parentModeButton.hidden = !userIsParent();
     }
 
-    const response = await fetch("/api/books");
-    if (!response.ok) {
-      throw new Error("Books not found.");
-    }
-    books = await response.json();
-    renderShelf();
+    await loadBooks();
     const requestedBookId = new URLSearchParams(window.location.search).get("book");
     const requestedLevel = Number(new URLSearchParams(window.location.search).get("level"));
     if (Number.isInteger(requestedLevel) && requestedLevel > 0) {
@@ -579,11 +859,8 @@ async function init() {
       ? requestedBookId
       : books[0]?.id;
 
-    if (!firstBookId) {
-      throw new Error("No books found.");
-    }
-
-    await selectBook(firstBookId, { updateUrl: Boolean(requestedBookId) });
+    if (firstBookId) await selectBook(firstBookId, { updateUrl: Boolean(requestedBookId) });
+    setMode("reading");
   } catch {
     elements.title.textContent = "Could not load bookshelf";
     elements.pageCount.textContent = "";
