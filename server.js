@@ -13,7 +13,6 @@ import { createLibraryStore } from "./library.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
 const booksDir = path.join(__dirname, "books");
-const booksDir = path.join(worksDir, "success");
 const port = Number(process.env.PORT || 3000);
 const execFileAsync = promisify(execFile);
 const maxBookUploadSize = 50 * 1024 * 1024;
