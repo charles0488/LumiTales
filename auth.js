@@ -377,7 +377,7 @@ function rowToUser(row) {
     name: row.name || "",
     picture: row.picture || "",
     passwordHash: row.password_hash || "",
-    role: row.role || "user",
+    role: row.role || "parent",
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -1007,7 +1007,7 @@ export function createAuth({ baseDir, logger = console }) {
             name text not null default '',
             picture text not null default '',
             password_hash text not null default '',
-            role text not null default 'user',
+            role text not null default 'parent',
             created_at text not null,
             updated_at text not null,
             unique(provider, provider_sub)
@@ -1037,6 +1037,7 @@ export function createAuth({ baseDir, logger = console }) {
           );
         `);
         await addUserRoleColumnIfMissing();
+        await migrateUserRoles();
         await migrateLegacyUsers();
         await removeBukadminUser();
         await ensureFirstUserAdmin();
@@ -1050,8 +1051,12 @@ export function createAuth({ baseDir, logger = console }) {
   async function addUserRoleColumnIfMissing() {
     const columns = await allRows(usersDbPath, "pragma table_info(users)");
     if (!columns.some((column) => column.name === "role")) {
-      await runSql(usersDbPath, "alter table users add column role text not null default 'user'");
+      await runSql(usersDbPath, "alter table users add column role text not null default 'parent'");
     }
+  }
+
+  async function migrateUserRoles() {
+    await runSql(usersDbPath, "update users set role = 'parent' where role = 'user'");
   }
 
   async function removeBukadminUser() {
@@ -1098,7 +1103,7 @@ export function createAuth({ baseDir, logger = console }) {
         name: user.name || "",
         picture: user.picture || "",
         passwordHash: user.passwordHash || "",
-        role: user.role || (isFirstImportedUser ? "admin" : "user"),
+        role: user.role || (isFirstImportedUser ? "admin" : "parent"),
         createdAt: user.createdAt || new Date().toISOString(),
         updatedAt: user.updatedAt || new Date().toISOString()
       });
@@ -1119,7 +1124,7 @@ export function createAuth({ baseDir, logger = console }) {
         ${sqlValue(user.name)},
         ${sqlValue(user.picture)},
         ${sqlValue(user.passwordHash || "")},
-        ${sqlValue(user.role || "user")},
+        ${sqlValue(user.role || "parent")},
         ${sqlValue(user.createdAt)},
         ${sqlValue(user.updatedAt)}
       )
@@ -1300,7 +1305,7 @@ export function createAuth({ baseDir, logger = console }) {
       emailVerified: claims.email_verified === true || claims.email_verified === "true",
       name: claims.name || user?.name || [appleUser.name?.firstName, appleUser.name?.lastName].filter(Boolean).join(" "),
       picture: claims.picture || user?.picture || "",
-      role: user?.role || ((await countUsers()) === 0 ? "admin" : "user"),
+      role: user?.role || ((await countUsers()) === 0 ? "admin" : "parent"),
       updatedAt: new Date().toISOString(),
       createdAt: user?.createdAt || new Date().toISOString()
     };
@@ -1326,6 +1331,13 @@ export function createAuth({ baseDir, logger = console }) {
 
   async function authenticateLocal(login, password) {
     return withLocalAuthLock(() => authenticateLocalLocked(login, password));
+  }
+
+  async function verifyUserPassword(userId, password) {
+    await ensureUserDb();
+    const user = await findUser(`id = ${sqlValue(userId)}`);
+    if (!user || user.provider !== "local" || !user.passwordHash) return false;
+    return verifyPassword(String(password || ""), user.passwordHash);
   }
 
   async function authenticateLocalLocked(login, password) {
@@ -1389,7 +1401,7 @@ export function createAuth({ baseDir, logger = console }) {
       name: email,
       picture: "",
       passwordHash: await hashPassword(password),
-      role: existing?.role || ((await countUsers()) === 0 ? "admin" : "user"),
+      role: existing?.role || ((await countUsers()) === 0 ? "admin" : "parent"),
       updatedAt: now,
       createdAt: existing?.createdAt || now
     };
@@ -1730,6 +1742,7 @@ export function createAuth({ baseDir, logger = console }) {
   return {
     handleAuth,
     requireAuth,
-    requireAdmin
+    requireAdmin,
+    verifyUserPassword
   };
 }

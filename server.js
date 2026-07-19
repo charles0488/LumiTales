@@ -13,6 +13,7 @@ import { createLibraryStore } from "./library.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, "public");
 const booksDir = path.join(__dirname, "books");
+const booksDir = path.join(worksDir, "success");
 const port = Number(process.env.PORT || 3000);
 const execFileAsync = promisify(execFile);
 const maxBookUploadSize = 50 * 1024 * 1024;
@@ -265,6 +266,7 @@ async function loadBook(bookId, requestedLevel) {
 }
 
 async function listBooks() {
+  await mkdir(booksDir, { recursive: true });
   const entries = await readdir(booksDir, { withFileTypes: true });
   const books = await Promise.all(
     entries
@@ -507,6 +509,7 @@ async function validateBookUpload(bookRoot) {
 }
 
 async function installBookUpload(bookId, bookRoot) {
+  await mkdir(booksDir, { recursive: true });
   const targetDir = path.join(booksDir, bookId);
   const stagingDir = path.join(booksDir, `.${bookId}.upload-${Date.now()}`);
 
@@ -686,8 +689,11 @@ async function handleApi(req, res) {
 
 async function serveStatic(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const staticRoot = url.pathname.startsWith("/books/") ? __dirname : publicDir;
-  const requestPath = url.pathname === "/" ? "/index.html" : url.pathname;
+  const isBookAsset = url.pathname.startsWith("/books/");
+  const staticRoot = isBookAsset ? booksDir : publicDir;
+  const requestPath = isBookAsset
+    ? url.pathname.slice("/books".length)
+    : url.pathname === "/" ? "/index.html" : url.pathname;
   const filePath = resolveInside(staticRoot, requestPath);
 
   if (!filePath) {
