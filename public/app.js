@@ -31,6 +31,12 @@ const elements = {
   libraryGrid: document.querySelector("#libraryGrid"),
   librarySelectionCount: document.querySelector("#librarySelectionCount"),
   libraryStatus: document.querySelector("#libraryStatus"),
+  familyBookGrid: document.querySelector("#familyBookGrid"),
+  addFamilyBookButton: document.querySelector("#addFamilyBookButton"),
+  addPublicBookButton: document.querySelector("#addPublicBookButton"),
+  bookCreatorKicker: document.querySelector("#bookCreatorKicker"),
+  familyBookPopover: document.querySelector("#familyBookPopover"),
+  closeFamilyBookPopover: document.querySelector("#closeFamilyBookPopover"),
   parentGate: document.querySelector("#parentGate"),
   parentGateForm: document.querySelector("#parentGateForm"),
   parentGateTitle: document.querySelector("#parentGateTitle"),
@@ -72,6 +78,13 @@ let playedBeforeReadingQuestions = false;
 let playedAfterReadingQuestions = false;
 let currentUser;
 let libraryBooks = [];
+let ownedLibraryBooks = [];
+let familyBooks = [];
+let publicBookJobs = [];
+let creatorVisibility = "private";
+let familyStatusTimer;
+let familyDeleteTimer;
+let familyBookDeleteAfterMs = 3 * 60 * 1000;
 let remainingCheckoutSlots = 5;
 let parentPin = "";
 let isSettingParentPin = false;
@@ -144,10 +157,7 @@ function closeParentGate() {
   elements.parentGateStatus.textContent = "";
 }
 
-function renderLibrary() {
-  const checkedOutCount = libraryBooks.filter((item) => item.checkedOut).length;
-  elements.librarySelectionCount.textContent = `${checkedOutCount} of 5 checked out`;
-  elements.libraryGrid.replaceChildren(...libraryBooks.map((item) => {
+function createLibraryCard(item) {
     const card = document.createElement("article");
     card.className = "library-card";
     const image = document.createElement("img");
@@ -169,10 +179,43 @@ function renderLibrary() {
       action.disabled = true;
       return updateCheckout(item);
     });
-    content.append(title, meta, action);
+    const actions = document.createElement("div");
+    actions.className = "library-card-actions";
+    actions.append(action);
+    if (currentUser?.role === "admin") {
+      const deleteAction = document.createElement("button");
+      deleteAction.type = "button";
+      deleteAction.className = "delete-book-button";
+      deleteAction.textContent = "Delete";
+      deleteAction.addEventListener("click", () => deleteLibraryBook(item));
+      actions.append(deleteAction);
+    }
+    content.append(title, meta, actions);
     card.append(image, content);
     return card;
-  }));
+}
+
+function renderLibrary() {
+  const checkedOutCount = [...libraryBooks, ...ownedLibraryBooks].filter((item) => item.checkedOut).length;
+  elements.librarySelectionCount.textContent = `${checkedOutCount} of 5 checked out`;
+  elements.libraryGrid.replaceChildren(...libraryBooks.map(createLibraryCard), ...publicBookJobs.map(createJobCard));
+}
+
+async function deleteLibraryBook(item) {
+  if (!window.confirm(`Delete “${item.title}” for every user? This cannot be undone.`)) return;
+  elements.libraryStatus.textContent = `Deleting ${item.title}…`;
+  const response = await fetch(`/api/library/${encodeURIComponent(item.id)}`, {
+    method: "DELETE",
+    headers: { "x-parent-pin": parentPin }
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    elements.libraryStatus.textContent = payload.error || "Could not delete book.";
+    return;
+  }
+  elements.libraryStatus.textContent = `${item.title} deleted.`;
+  await loadLibrary();
+  await loadBooks({ autoSelect: true });
 }
 
 async function loadLibraryCover(item, image) {
@@ -195,13 +238,120 @@ async function loadLibrary() {
     const response = await fetch("/api/library", { headers: { "x-parent-pin": parentPin } });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Could not load library.");
-    libraryBooks = payload.books;
+    libraryBooks = payload.books.filter((item) => !item.owned);
+    ownedLibraryBooks = payload.books.filter((item) => item.owned);
     remainingCheckoutSlots = payload.remainingCheckoutSlots;
     elements.libraryStatus.textContent = "";
     renderLibrary();
+    await loadFamilyBooks();
   } catch (error) {
     elements.libraryStatus.textContent = error.message;
   }
+}
+
+function createJobCard(item) {
+  const card = document.createElement("article");
+  card.className = "family-book-card";
+  const title = document.createElement("h3");
+  title.textContent = item.title;
+  const source = document.createElement("p");
+  source.textContent = `${item.sourceType === "pdf" ? "PDF import" : item.sourceType === "images" ? "Image book" : "Story prompt"} · ${new Date(item.createdAt).toLocaleString()}`;
+  const detail = document.createElement("p");
+  detail.textContent = item.detail || "Waiting for an update.";
+  const status = document.createElement("span");
+  status.className = "family-book-status";
+  status.dataset.status = item.status;
+  status.textContent = item.status;
+  card.append(title, source, detail, status);
+  const isTerminal = item.status === "failed" || item.status === "succeeded";
+  const eligibleAt = Date.parse(item.deleteAvailableAt) || (Date.parse(item.createdAt) + familyBookDeleteAfterMs);
+  if (isTerminal || item.canDelete || Date.now() >= eligibleAt) {
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "delete-family-job-button";
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", () => deleteFamilyBookJob(item));
+    card.append(deleteButton);
+  }
+  return card;
+}
+
+function renderFamilyBooks() {
+  window.clearTimeout(familyDeleteTimer);
+  if (!familyBooks.length && !ownedLibraryBooks.length) {
+    const empty = document.createElement("p");
+    empty.className = "family-book-empty";
+    empty.textContent = "No family books yet. Use + to create one.";
+    elements.familyBookGrid.replaceChildren(empty);
+  } else {
+    elements.familyBookGrid.replaceChildren(...ownedLibraryBooks.map(createLibraryCard), ...familyBooks.map(createJobCard));
+  }
+  renderLibrary();
+  const nextEligibleAt = Math.min(...[...familyBooks, ...publicBookJobs]
+    .filter((item) => !item.canDelete && item.status !== "failed" && item.status !== "succeeded")
+    .map((item) => Date.parse(item.deleteAvailableAt) || (Date.parse(item.createdAt) + familyBookDeleteAfterMs))
+    .filter((eligibleAt) => eligibleAt > Date.now()));
+  if (Number.isFinite(nextEligibleAt)) {
+    familyDeleteTimer = window.setTimeout(renderFamilyBooks, Math.max(0, nextEligibleAt - Date.now()) + 50);
+  }
+}
+
+async function deleteFamilyBookJob(item) {
+  if (!window.confirm(`Remove “${item.title}” from creation history?`)) return;
+  const response = await fetch(`/api/family-books/${encodeURIComponent(item.id)}`, {
+    method: "DELETE",
+    headers: { "x-parent-pin": parentPin }
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    elements.libraryStatus.textContent = payload.error || "Could not delete family book job.";
+    return;
+  }
+  elements.libraryStatus.textContent = `${item.title} removed.`;
+  await loadFamilyBooks();
+}
+
+async function loadFamilyBooks() {
+  window.clearTimeout(familyStatusTimer);
+  try {
+    const response = await fetch("/api/family-books", { headers: { "x-parent-pin": parentPin } });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Could not load family books.");
+    familyBooks = payload.books.filter((item) => item.visibility !== "public" &&
+      !ownedLibraryBooks.some((book) => book.id === item.bookId));
+    publicBookJobs = payload.books.filter((item) => item.visibility === "public" &&
+      !libraryBooks.some((book) => book.id === item.bookId));
+    familyBookDeleteAfterMs = payload.deleteAfterMs;
+    elements.addFamilyBookButton.disabled = !payload.configured;
+    elements.addPublicBookButton.disabled = !payload.configured;
+    elements.addFamilyBookButton.title = payload.configured ? "Create a family book" : "LumiTale Web is not configured";
+    renderFamilyBooks();
+    if ([...familyBooks, ...publicBookJobs].some((item) => item.status === "running" || (item.status === "accepted" && item.remoteJobId))) {
+      familyStatusTimer = window.setTimeout(loadFamilyBooks, 3000);
+    }
+  } catch (error) {
+    elements.libraryStatus.textContent = error.message;
+  }
+}
+
+function setFamilyPopover(open, visibility = creatorVisibility) {
+  creatorVisibility = visibility;
+  elements.familyBookPopover.hidden = !open;
+  elements.addFamilyBookButton.setAttribute("aria-expanded", String(open));
+  elements.addPublicBookButton.setAttribute("aria-expanded", String(open));
+  elements.bookCreatorKicker.textContent = visibility === "public" ? "New public library book" : "New family book";
+  if (open) elements.familyBookPopover.querySelector('[role="tab"][aria-selected="true"]').focus();
+}
+
+function selectFamilyTab(selected) {
+  const tabs = [...elements.familyBookPopover.querySelectorAll('[role="tab"]')];
+  for (const tab of tabs) {
+    const active = tab === selected;
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+    document.getElementById(tab.getAttribute("aria-controls")).hidden = !active;
+  }
+  selected.focus();
 }
 
 async function updateCheckout(item) {
@@ -729,6 +879,52 @@ elements.resetPinForm.addEventListener("submit", async (event) => {
 
 elements.readingModeButton.addEventListener("click", () => setMode("reading"));
 elements.parentModeButton.addEventListener("click", requestParentMode);
+elements.addFamilyBookButton.addEventListener("click", () => setFamilyPopover(true, "private"));
+elements.addPublicBookButton.addEventListener("click", () => setFamilyPopover(true, "public"));
+elements.closeFamilyBookPopover.addEventListener("click", () => setFamilyPopover(false));
+const familyTabs = [...elements.familyBookPopover.querySelectorAll('[role="tab"]')];
+familyTabs.forEach((tab, index) => {
+  tab.addEventListener("click", () => selectFamilyTab(tab));
+  tab.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+    event.preventDefault();
+    selectFamilyTab(familyTabs[(index + (event.key === "ArrowRight" ? 1 : -1) + familyTabs.length) % familyTabs.length]);
+  });
+});
+for (const input of elements.familyBookPopover.querySelectorAll('input[type="file"]')) {
+  input.addEventListener("change", () => {
+    const oversized = [...input.files].filter((file) => file.size >= Number(input.dataset.maximumBytes));
+    const message = oversized.length
+      ? `${input.multiple ? "Each file" : "The file"} must be under ${input.dataset.maximumMb} MB: ${oversized.map((file) => file.name).join(", ")}`
+      : "";
+    input.setCustomValidity(message);
+    input.closest("form").querySelector("output").textContent = message;
+  });
+}
+for (const form of elements.familyBookPopover.querySelectorAll("form")) {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const output = form.querySelector("output");
+    output.textContent = "Submitting…";
+    try {
+      const action = new URL(form.action);
+      action.searchParams.set("visibility", creatorVisibility);
+      const response = await fetch(action, {
+        method: "POST",
+        headers: { "x-parent-pin": parentPin },
+        body: new FormData(form)
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Submission failed.");
+      form.reset();
+      output.textContent = "Book submitted.";
+      await loadFamilyBooks();
+      window.setTimeout(() => setFamilyPopover(false), 500);
+    } catch (error) {
+      output.textContent = error.message;
+    }
+  });
+}
 elements.parentGateCancel.addEventListener("click", closeParentGate);
 elements.forgotParentPinButton.addEventListener("click", () => {
   isResettingForgottenPin = true;
@@ -782,13 +978,18 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !elements.familyBookPopover.hidden) {
+    setFamilyPopover(false);
+    (creatorVisibility === "public" ? elements.addPublicBookButton : elements.addFamilyBookButton).focus();
+    return;
+  }
   if (event.key === "Escape" && isShelfOpen) {
     setShelfOpen(false);
     elements.shelfToggle.focus();
     return;
   }
 
-  if (event.target.closest("button, input, select, a")) {
+  if (event.target.closest("button, input, textarea, select, a")) {
     return;
   }
 
@@ -846,6 +1047,7 @@ async function init() {
       elements.accountRole.textContent = userIsParent() ? "Parent account" : "Kid account · reading only";
       elements.modeNav.hidden = false;
       elements.parentModeButton.hidden = !userIsParent();
+      elements.addPublicBookButton.hidden = user?.role !== "admin";
     }
 
     await loadBooks();

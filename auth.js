@@ -779,6 +779,23 @@ export function createAuth({ baseDir, logger = console }) {
     return false;
   }
 
+  async function requireAdminBearer(req, res) {
+    const hasBearerToken = /^Bearer\s+\S+/i.test(String(req.headers.authorization || ""));
+    const tokenUser = hasBearerToken ? await userForBearerToken(req) : null;
+    if (tokenUser?.role === "admin") {
+      req.user = tokenUser;
+      return true;
+    }
+
+    res.writeHead(hasBearerToken ? 403 : 401, {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "www-authenticate": "Bearer"
+    });
+    res.end(JSON.stringify({ error: hasBearerToken ? "Administrator bearer token required." : "Bearer token required." }));
+    return false;
+  }
+
   function renderLogin(req, error = "", message = "") {
     const session = sessionFromRequest(req);
     if (session) {
@@ -1743,6 +1760,7 @@ export function createAuth({ baseDir, logger = console }) {
     handleAuth,
     requireAuth,
     requireAdmin,
+    requireAdminBearer,
     verifyUserPassword
   };
 }

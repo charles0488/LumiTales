@@ -35,7 +35,42 @@ For local sign-in, open `/signup` to create an account with an email address and
 
 Parents use **Parent library** to check out up to five books from the `books` folder. Checkouts and returns are recorded in the `book_checkouts` table. Kid reading mode only serves books that are currently checked out; when five are active, a book must be returned before another can be added.
 
-All books currently loaded from `books/` are treated as Public Library titles. They can be checked out directly and always show either **Check out** or **Return**. Parent Library also includes a separate Family Library section marked as coming soon; private creation, storage, and ordering behavior will be defined later.
+Administrators can permanently delete a Public Library book from its card in Parent Library. Deletion removes the book files and all matching checkout and private-order records for every user.
+
+All books currently loaded from `books/` are treated as Public Library titles. They can be checked out directly and always show either **Check out** or **Return**. Family Library's **+** button submits a prompt, ordered PNG/JPG images, or a PDF to LumiTale Web. Administrators also see a **+** button in Public Library that reuses the same creator and records the job with `visibility = public`; family jobs use `visibility = private`. Submission and generation status is stored in the `family_book_jobs` SQLite table, so it survives application restarts. The server rejects public submissions from non-administrators. On startup, a recorded one-time migration renames the former `collection` column to `visibility` and converts legacy `family` values to `private`.
+
+Configure the LumiTale Web service base URL:
+
+```sh
+export LUMITALE_WEBSERVICE_URL="http://localhost:8000"
+```
+
+Create an administrator API token as described below, then configure LumiTale Web to POST status updates to this callback URL using that token as an HTTP bearer token:
+
+```text
+https://your-lumitales.example/api/family-books/status-callback
+Authorization: Bearer lumitales_...
+```
+
+The callback does not accept session cookies or tokens in the URL. Only a valid, unrevoked API token belonging to an administrator is accepted.
+
+LumiTales forwards creator scope as `visibility=public|private`. Status callbacks must
+include the same `visibility` value as the original submission and are correlated
+through the web-service `job_id`; successful callbacks may also include `book_id`
+and `output_path`. Public-job artifacts are retained on the family-book job row.
+After a private book is successfully published and its ownership is recorded, its
+completed creation job is removed; the durable ownership record keeps later
+republishes private and restricted to the same user.
+
+Failed and succeeded family-book job cards show a Delete button immediately. Other
+job cards show it after three minutes by default. Change that non-terminal delay
+with `FAMILY_BOOK_JOB_DELETE_AFTER_MINUTES`; the server enforces it even if the UI is bypassed:
+
+```sh
+export FAMILY_BOOK_JOB_DELETE_AFTER_MINUTES=3
+```
+
+The proxy and browser both enforce LumiTale Web's default limits: every image must be smaller than 1 MB and a PDF must be smaller than 10 MB. The server is authoritative even if browser validation is bypassed.
 
 Shared accounts open in Kid Reading mode after every login or refresh. The first adult entering Parent Library creates a 4–8 digit parent PIN. That PIN is required by both the interface and checkout APIs, is stored as a salted `scrypt` hash, and is cleared from the browser when Parent mode closes or after five minutes of inactivity.
 
@@ -104,7 +139,7 @@ Apple web sign-in normally requires a verified HTTPS domain, so use your deploye
 
 Authenticated users and roles are stored in `data/users.sqlite3`. Set `AUTH_DATA_DIR` to use a different directory. If a legacy `data/users.json` file exists and the SQLite database is empty, the app imports those users on startup and makes the first imported user an admin. Sessions are stored in memory and are cleared when the server restarts.
 
-Book uploads with `POST /books/:id` require the `admin` role. Authenticated users can read book files under `/books/...`.
+Book uploads with `POST /books/:id` require the `admin` role. Publishing checks the book id against the originating family-book job: private books are assigned to that job's user and appear only in their Family Library, while books without private ownership appear in the Public Library. Authenticated users can read checked-out book files under `/books/...`.
 
 An uploaded zip may contain the book files at its root or inside one top-level folder. Multi-level books use this layout:
 
