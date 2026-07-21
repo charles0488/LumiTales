@@ -677,7 +677,7 @@ async function handleApi(req, res) {
   }
 
   const url = new URL(req.url, `http://${req.headers.host}`);
-  if (req.method === "GET" && url.pathname === "/api/family-books") {
+  if (req.method === "GET" && url.pathname === "/api/book-jobs") {
     await requireParentPin(req);
     const now = Date.now();
     const books = (await library.familyBookJobs(req.user.id)).map((job) => {
@@ -718,14 +718,14 @@ async function handleApi(req, res) {
     return true;
   }
 
-  const familySubmitMatch = url.pathname.match(/^\/api\/family-books\/from-(prompt|images|pdf)$/);
-  if (req.method === "POST" && familySubmitMatch) {
+  const bookSubmitMatch = url.pathname.match(/^\/api\/books\/from-(prompt|images|pdf)$/);
+  if (req.method === "POST" && bookSubmitMatch) {
     await requireParentPin(req);
     const visibility = url.searchParams.get("visibility") === "public" ? "public" : "private";
     if (visibility === "public" && req.user.role !== "admin") {
       throw httpError(403, "Administrator access required to create Public Library books.");
     }
-    sendJson(res, 202, await submitFamilyBook(req, familySubmitMatch[1], visibility));
+    sendJson(res, 202, await submitFamilyBook(req, bookSubmitMatch[1], visibility));
     return true;
   }
   if (req.method === "GET" && url.pathname === "/api/parent-pin") {

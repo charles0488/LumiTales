@@ -115,13 +115,13 @@
             <button id="familyPdfTab" type="button" role="tab" aria-selected="false" aria-controls="familyPdfPanel" tabindex="-1">Import a PDF</button>
           </nav>
           <div id="familyPromptPanel" class="family-tab-panel" role="tabpanel" aria-labelledby="familyPromptTab">
-            <form action="/api/family-books/from-prompt" method="post">
+            <form action="/api/books/from-prompt" method="post">
               <label>Creative brief<textarea name="prompt" required placeholder="A shy moon moth learns to ask for help..."></textarea></label>
               <button type="submit">Submit prompt</button><output></output>
             </form>
           </div>
           <div id="familyImagesPanel" class="family-tab-panel" role="tabpanel" aria-labelledby="familyImagesTab" hidden>
-            <form action="/api/family-books/from-images" method="post" enctype="multipart/form-data">
+            <form action="/api/books/from-images" method="post" enctype="multipart/form-data">
               <label>Book title<input name="title" required></label>
               <label>Page images<input name="images" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple required data-maximum-bytes="1000000" data-maximum-mb="1"></label>
               <p class="family-form-hint">PNG or JPG, each under 1 MB. Selected order becomes page order.</p>
@@ -129,7 +129,7 @@
             </form>
           </div>
           <div id="familyPdfPanel" class="family-tab-panel" role="tabpanel" aria-labelledby="familyPdfTab" hidden>
-            <form action="/api/family-books/from-pdf" method="post" enctype="multipart/form-data">
+            <form action="/api/books/from-pdf" method="post" enctype="multipart/form-data">
               <label>PDF file<input name="pdf" type="file" accept="application/pdf,.pdf" required data-maximum-bytes="10000000" data-maximum-mb="10"></label>
               <p class="family-form-hint">PDF files must be under 10 MB.</p>
               <button type="submit">Submit PDF</button><output></output>

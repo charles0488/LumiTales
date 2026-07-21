@@ -314,7 +314,7 @@ async function deleteFamilyBookJob(item) {
 async function loadFamilyBooks() {
   window.clearTimeout(familyStatusTimer);
   try {
-    const response = await fetch("/api/family-books", { headers: { "x-parent-pin": parentPin } });
+    const response = await fetch("/api/book-jobs", { headers: { "x-parent-pin": parentPin } });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Could not load family books.");
     familyBooks = payload.books.filter((item) => item.visibility !== "public" &&
