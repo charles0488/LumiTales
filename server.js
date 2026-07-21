@@ -19,7 +19,8 @@ const execFileAsync = promisify(execFile);
 const maxBookUploadSize = 50 * 1024 * 1024;
 const maximumImageBytes = 1_000_000;
 const maximumPdfBytes = 10_000_000;
-const lumitaleWebserviceUrl = String(process.env.LUMITALE_WEBSERVICE_URL || "").replace(/\/$/, "");
+const dataDir = process.env.AUTH_DATA_DIR || path.join(__dirname, "data");
+const bookJobPayloadDir = path.join(dataDir, "book-job-payloads");
 const familyBookJobDeleteAfterMinutes = Number(process.env.FAMILY_BOOK_JOB_DELETE_AFTER_MINUTES || 3);
 if (!Number.isFinite(familyBookJobDeleteAfterMinutes) || familyBookJobDeleteAfterMinutes < 0) {
   throw new Error("FAMILY_BOOK_JOB_DELETE_AFTER_MINUTES must be a non-negative number.");
@@ -155,7 +156,8 @@ function multipartParts(body, contentType) {
     const headers = body.subarray(start, headerEnd).toString("latin1");
     const name = headers.match(/name="([^"]+)"/i)?.[1] || "";
     const filename = headers.match(/filename="([^"]*)"/i)?.[1];
-    parts.push({ name, filename, data: body.subarray(contentStart, contentEnd) });
+    const contentType = headers.match(/content-type:\s*([^\r\n]+)/i)?.[1]?.trim();
+    parts.push({ name, filename, contentType, data: body.subarray(contentStart, contentEnd) });
     cursor = contentEnd + 2;
   }
   return parts;
@@ -169,12 +171,11 @@ function bookStatusCallbackUrl(req) {
   return new URL("/api/books/status-callback", publicBaseUrl(req)).toString();
 }
 
-async function submitFamilyBook(req, sourceType, visibility = "private") {
-  if (!lumitaleWebserviceUrl) throw httpError(503, "LUMITALE_WEBSERVICE_URL is not configured.");
-  const paths = { prompt: "/api/books/from-prompt", images: "/api/books/from-images", pdf: "/api/books/from-pdf" };
+async function submitBookJob(req, sourceType, visibility = "private") {
   const maximumBody = sourceType === "prompt" ? 64 * 1024 : maximumPdfBytes + 512 * 1024;
   const body = await readBinaryRequestBody(req, maximumBody, "Book submission is too large.");
   let title = "Untitled family book";
+  let book;
   if (sourceType === "prompt") {
     const contentType = req.headers["content-type"] || "";
     const prompt = (contentType.toLowerCase().startsWith("multipart/form-data")
@@ -182,6 +183,7 @@ async function submitFamilyBook(req, sourceType, visibility = "private") {
       : new URLSearchParams(body.toString("utf8")).get("prompt"))?.trim();
     if (!prompt) throw httpError(400, "A story prompt is required.");
     title = prompt.length > 72 ? `${prompt.slice(0, 69)}…` : prompt;
+    book = { prompt };
   } else {
     const parts = multipartParts(body, req.headers["content-type"] || "");
     const files = parts.filter((part) => part.filename !== undefined);
@@ -190,34 +192,45 @@ async function submitFamilyBook(req, sourceType, visibility = "private") {
       const oversized = files.filter((part) => part.data.length >= maximumImageBytes).map((part) => part.filename);
       if (oversized.length) throw httpError(413, `Each image must be smaller than 1 MB: ${oversized.join(", ")}`);
       title = parts.find((part) => part.name === "title")?.data.toString("utf8").trim() || title;
+      book = {
+        title,
+        images: files.map((file) => ({
+          filename: file.filename,
+          contentType: file.contentType || "application/octet-stream",
+          data: file.data.toString("base64")
+        }))
+      };
     } else {
       if (files.length !== 1) throw httpError(400, "Choose one PDF file.");
       if (files[0].data.length >= maximumPdfBytes) throw httpError(413, `The PDF must be smaller than 10 MB: ${files[0].filename}`);
       title = files[0].filename?.replace(/\.pdf$/i, "") || title;
+      book = {
+        pdf: {
+          filename: files[0].filename,
+          contentType: files[0].contentType || "application/pdf",
+          data: files[0].data.toString("base64")
+        }
+      };
     }
   }
-  let response;
+
+  const id = randomUUID();
+  await mkdir(bookJobPayloadDir, { recursive: true });
+  const payloadPath = path.join(bookJobPayloadDir, `${id}.json`);
+  const temporaryPath = path.join(bookJobPayloadDir, `.${id}.tmp`);
   try {
-    const submissionUrl = new URL(`${lumitaleWebserviceUrl}${paths[sourceType]}`);
-    submissionUrl.searchParams.set("visibility", visibility);
-    response = await fetch(submissionUrl, {
-      method: "POST",
-      headers: { "content-type": req.headers["content-type"] || "application/octet-stream" },
-      body
+    await writeFile(temporaryPath, JSON.stringify(book), { mode: 0o600 });
+    await rename(temporaryPath, payloadPath);
+    await library.createFamilyBookJob({
+      id, userId: req.user.id, remoteJobId: id, sourceType, visibility, title, status: "accepted",
+      detail: "Submission accepted."
     });
   } catch (error) {
-    throw httpError(502, `Could not reach LumiTale Web: ${error.message}`);
+    await rm(temporaryPath, { force: true });
+    await rm(payloadPath, { force: true });
+    throw error;
   }
-  const text = await response.text();
-  let result;
-  try { result = JSON.parse(text); } catch { result = {}; }
-  if (!response.ok) throw httpError(response.status, result.detail || result.error || "LumiTale Web rejected the submission.");
-  const status = result.job_id ? "running" : (result.status || "accepted");
-  await library.createFamilyBookJob({
-    id: randomUUID(), userId: req.user.id, remoteJobId: result.job_id || null, sourceType, visibility, title, status,
-    detail: result.job_id ? "Book generation is in progress." : "Submission accepted."
-  });
-  return { ...result, status, callbackUrl: bookStatusCallbackUrl(req) };
+  return { job_id: id, status: "accepted", callback_url: bookStatusCallbackUrl(req) };
 }
 
 async function readJsonRequestBody(req, maxSize = 64 * 1024) {
@@ -693,7 +706,7 @@ async function handleApi(req, res) {
     });
     sendJson(res, 200, {
       books,
-      configured: Boolean(lumitaleWebserviceUrl),
+      configured: true,
       callbackUrl: bookStatusCallbackUrl(req),
       deleteAfterMs: familyBookJobDeleteAfterMs,
       limits: { imageBytes: maximumImageBytes, pdfBytes: maximumPdfBytes }
@@ -714,6 +727,7 @@ async function handleApi(req, res) {
       throw httpError(409, `This job can be deleted in ${remainingSeconds} seconds.`);
     }
     await library.deleteFamilyBookJob(req.user.id, jobId);
+    await rm(path.join(bookJobPayloadDir, `${jobId}.json`), { force: true });
     sendJson(res, 200, { ok: true, id: jobId });
     return true;
   }
@@ -725,7 +739,7 @@ async function handleApi(req, res) {
     if (visibility === "public" && req.user.role !== "admin") {
       throw httpError(403, "Administrator access required to create Public Library books.");
     }
-    sendJson(res, 202, await submitFamilyBook(req, bookSubmitMatch[1], visibility));
+    sendJson(res, 202, await submitBookJob(req, bookSubmitMatch[1], visibility));
     return true;
   }
   if (req.method === "GET" && url.pathname === "/api/parent-pin") {
@@ -942,17 +956,44 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/book-jobs/next") {
+      if (!(await auth.requireAdminBearer(req, res))) return;
+      const job = await library.claimNextBookJob();
+      if (!job) {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+      let book;
+      try {
+        book = JSON.parse(await readFile(path.join(bookJobPayloadDir, `${job.id}.json`), "utf8"));
+      } catch (error) {
+        await library.updateFamilyBookJob(job.remoteJobId, {
+          status: "failed",
+          visibility: job.visibility,
+          detail: "Stored book payload could not be read."
+        });
+        if (error.code === "ENOENT") throw httpError(500, "Book job payload is missing.");
+        throw error;
+      }
+      sendJson(res, 200, { job, book });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/books/status-callback") {
       if (!(await auth.requireAdminBearer(req, res))) return;
       const payload = await readJsonRequestBody(req);
       if (!payload.job_id || !payload.status || !payload.visibility) {
         throw httpError(400, "job_id, status, and visibility are required.");
       }
-      if (!["accepted", "running", "succeeded", "failed"].includes(String(payload.status))) {
+      if (!["accepted", "working", "succeeded", "failed"].includes(String(payload.status))) {
         throw httpError(400, "Unsupported book job status.");
       }
       if (!["private", "public"].includes(String(payload.visibility))) {
         throw httpError(400, "Unsupported book job visibility.");
+      }
+      if (payload.status === "succeeded" && payload.book_id == null) {
+        throw httpError(400, "book_id is required when a book job succeeds.");
       }
       const changes = await library.updateFamilyBookJob(payload.job_id, {
         status: String(payload.status),
@@ -964,9 +1005,6 @@ const server = createServer(async (req, res) => {
       });
       if (!changes) throw httpError(404, "Book job not found.");
       if (payload.book_id != null) await library.syncPublishedBookOwnership(String(payload.book_id));
-      if (payload.status === "succeeded" && payload.visibility === "private" && payload.book_id != null) {
-        await library.deleteFamilyBookJobByRemoteId(String(payload.job_id));
-      }
       sendJson(res, 200, { ok: true });
       return;
     }

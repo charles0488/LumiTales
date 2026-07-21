@@ -149,6 +149,14 @@ export function createLibraryStore({ baseDir }) {
           }
           await run(`insert into schema_migrations (name, applied_at) values (${sqlValue(artifactMigration)}, ${sqlValue(new Date().toISOString())})`);
         }
+        const workingStatusMigration = "family_book_jobs_working_status_v1";
+        const workingStatusOutput = await run(`select count(*) as count from schema_migrations where name = ${sqlValue(workingStatusMigration)}`, { json: true });
+        if (!Number((workingStatusOutput ? JSON.parse(workingStatusOutput) : [])[0]?.count || 0)) {
+          await run(`begin immediate;
+            update family_book_jobs set status = 'working' where status = 'running';
+            insert into schema_migrations (name, applied_at) values (${sqlValue(workingStatusMigration)}, ${sqlValue(new Date().toISOString())});
+            commit;`);
+        }
       })();
     }
     await ready;
@@ -324,6 +332,21 @@ export function createLibraryStore({ baseDir }) {
     return output ? JSON.parse(output) : [];
   }
 
+  async function claimNextBookJob() {
+    return withMutationLock(async () => {
+      await ensureReady();
+      const now = new Date().toISOString();
+      const output = await run(`update family_book_jobs
+        set status = 'working', detail = 'Book generation is in progress.', updated_at = ${sqlValue(now)}
+        where id = (select id from family_book_jobs where status = 'accepted' order by created_at asc limit 1)
+          and status = 'accepted'
+        returning id, remote_job_id as remoteJobId, source_type as sourceType, visibility,
+          book_id as bookId, output_path as outputPath,
+          title, status, detail, created_at as createdAt, updated_at as updatedAt`, { json: true });
+      return (output ? JSON.parse(output) : [])[0] || null;
+    });
+  }
+
   async function deleteFamilyBookJob(userId, id) {
     return withMutationLock(async () => {
       await ensureReady();
@@ -340,11 +363,20 @@ export function createLibraryStore({ baseDir }) {
 
   async function updateFamilyBookJob(remoteJobId, { status, visibility, detail, bookId, outputPath }) {
     await ensureReady();
-    const existing = await run(`select visibility from family_book_jobs where remote_job_id = ${sqlValue(remoteJobId)}`, { json: true });
+    const existing = await run(`select visibility, status from family_book_jobs where remote_job_id = ${sqlValue(remoteJobId)}`, { json: true });
     const jobs = existing ? JSON.parse(existing) : [];
     if (!jobs.length) return 0;
     if (jobs[0].visibility !== visibility) {
       throw Object.assign(new Error("Book job visibility does not match the original submission."), { statusCode: 409 });
+    }
+    const transitions = {
+      accepted: new Set(["accepted", "working"]),
+      working: new Set(["working", "succeeded", "failed"]),
+      succeeded: new Set(["succeeded"]),
+      failed: new Set(["failed"])
+    };
+    if (!transitions[jobs[0].status]?.has(status)) {
+      throw Object.assign(new Error(`Book job cannot transition from ${jobs[0].status} to ${status}.`), { statusCode: 409 });
     }
     const fields = [`status = ${sqlValue(status)}`, `updated_at = ${sqlValue(new Date().toISOString())}`];
     if (detail !== undefined) fields.push(`detail = ${detail === null ? "null" : sqlValue(detail)}`);
@@ -355,5 +387,5 @@ export function createLibraryStore({ baseDir }) {
   }
 
   return { activeBookIds, ownedBookIds, visibleBookIds, syncPublishedBookOwnership, checkout, returnBook, deleteBookRecords, parentPinStatus, setParentPin, resetParentPin, verifyParentPin,
-    createFamilyBookJob, familyBookJobs, deleteFamilyBookJob, deleteFamilyBookJobByRemoteId, updateFamilyBookJob };
+    createFamilyBookJob, familyBookJobs, claimNextBookJob, deleteFamilyBookJob, deleteFamilyBookJobByRemoteId, updateFamilyBookJob };
 }

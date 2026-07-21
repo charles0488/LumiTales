@@ -37,15 +37,20 @@ Parents use **Parent library** to check out up to five books from the `books` fo
 
 Administrators can permanently delete a Public Library book from its card in Parent Library. Deletion removes the book files and all matching checkout and private-order records for every user.
 
-All books currently loaded from `books/` are treated as Public Library titles. They can be checked out directly and always show either **Check out** or **Return**. Family Library's **+** button submits a prompt, ordered PNG/JPG images, or a PDF to LumiTale Web. Administrators also see a **+** button in Public Library that reuses the same creator and records the job with `visibility = public`; family jobs use `visibility = private`. Submission and generation status is stored in the `family_book_jobs` SQLite table, so it survives application restarts. The server rejects public submissions from non-administrators. On startup, a recorded one-time migration renames the former `collection` column to `visibility` and converts legacy `family` values to `private`.
+All books currently loaded from `books/` are treated as Public Library titles. They can be checked out directly and always show either **Check out** or **Return**. Family Library's **+** button submits a prompt, ordered PNG/JPG images, or a PDF into the durable local book-job queue. Administrators also see a **+** button in Public Library that reuses the same creator and records the job with `visibility = public`; family jobs use `visibility = private`. Job metadata is stored in the `family_book_jobs` SQLite table and submission payloads are stored in `data/book-job-payloads`, so both survive application restarts. The server rejects public submissions from non-administrators.
 
-Configure the LumiTale Web service base URL:
+Create an administrator API token as described below. A remote worker polls the oldest accepted job using that token:
 
-```sh
-export LUMITALE_WEBSERVICE_URL="http://localhost:8000"
+```text
+GET https://your-lumitales.example/api/book-jobs/next
+Authorization: Bearer lumitales_...
 ```
 
-Create an administrator API token as described below, then configure LumiTale Web to POST status updates to this callback URL using that token as an HTTP bearer token:
+The response is `{ "job": {...}, "book": {...} }`, or HTTP 204 when no accepted job is waiting. Polling atomically claims the oldest accepted job and returns it with status `working`, preventing two workers from receiving the same job. Binary image and PDF data in `book` is base64 encoded.
+
+See [REMOTE_WORKER_SPEC.md](REMOTE_WORKER_SPEC.md) for the complete worker contract, processing sequence, retry guidance, and acceptance criteria.
+
+The worker reports progress and completion to:
 
 ```text
 https://your-lumitales.example/api/books/status-callback
@@ -54,13 +59,14 @@ Authorization: Bearer lumitales_...
 
 The callback does not accept session cookies or tokens in the URL. Only a valid, unrevoked API token belonging to an administrator is accepted.
 
-LumiTales forwards creator scope as `visibility=public|private`. Status callbacks must
-include the same `visibility` value as the original submission and are correlated
-through the web-service `job_id`; successful callbacks may also include `book_id`
-and `output_path`. Public-job artifacts are retained on the family-book job row.
-After a private book is successfully published and its ownership is recorded, its
-completed creation job is removed; the durable ownership record keeps later
-republishes private and restricted to the same user.
+Status callbacks must include the same `visibility` value as the original submission
+and are correlated through the local `job_id`. Valid transitions are `accepted` to
+`working`, then `working` to `succeeded` or `failed`; repeated current-status updates
+are accepted. Once the worker knows the final book ID, it sends a `working` callback
+with `book_id`, publishes the finished ZIP through `POST /books/:bookId`, and then
+sends `succeeded` with the same `book_id` (and optionally `output_path`). This order
+ensures private ownership is applied during publication. Completed job records are
+retained until the user deletes them.
 
 Failed and succeeded family-book job cards show a Delete button immediately. Other
 job cards show it after three minutes by default. Change that non-terminal delay
@@ -70,7 +76,7 @@ with `FAMILY_BOOK_JOB_DELETE_AFTER_MINUTES`; the server enforces it even if the 
 export FAMILY_BOOK_JOB_DELETE_AFTER_MINUTES=3
 ```
 
-The proxy and browser both enforce LumiTale Web's default limits: every image must be smaller than 1 MB and a PDF must be smaller than 10 MB. The server is authoritative even if browser validation is bypassed.
+The browser and server both enforce the upload limits: every image must be smaller than 1 MB and a PDF must be smaller than 10 MB. The server is authoritative even if browser validation is bypassed.
 
 Shared accounts open in Kid Reading mode after every login or refresh. The first adult entering Parent Library creates a 4–8 digit parent PIN. That PIN is required by both the interface and checkout APIs, is stored as a salted `scrypt` hash, and is cleared from the browser when Parent mode closes or after five minutes of inactivity.
 

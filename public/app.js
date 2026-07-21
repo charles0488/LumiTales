@@ -326,7 +326,7 @@ async function loadFamilyBooks() {
     elements.addPublicBookButton.disabled = !payload.configured;
     elements.addFamilyBookButton.title = payload.configured ? "Create a family book" : "LumiTale Web is not configured";
     renderFamilyBooks();
-    if ([...familyBooks, ...publicBookJobs].some((item) => item.status === "running" || (item.status === "accepted" && item.remoteJobId))) {
+    if ([...familyBooks, ...publicBookJobs].some((item) => item.status === "accepted" || item.status === "working")) {
       familyStatusTimer = window.setTimeout(loadFamilyBooks, 3000);
     }
   } catch (error) {
