@@ -165,8 +165,8 @@ function publicBaseUrl(req) {
   return String(process.env.PUBLIC_BASE_URL || `http://${req.headers.host}`).replace(/\/$/, "");
 }
 
-function familyCallbackUrl(req) {
-  return new URL("/api/family-books/status-callback", publicBaseUrl(req)).toString();
+function bookStatusCallbackUrl(req) {
+  return new URL("/api/books/status-callback", publicBaseUrl(req)).toString();
 }
 
 async function submitFamilyBook(req, sourceType, visibility = "private") {
@@ -217,7 +217,7 @@ async function submitFamilyBook(req, sourceType, visibility = "private") {
     id: randomUUID(), userId: req.user.id, remoteJobId: result.job_id || null, sourceType, visibility, title, status,
     detail: result.job_id ? "Book generation is in progress." : "Submission accepted."
   });
-  return { ...result, status, callbackUrl: familyCallbackUrl(req) };
+  return { ...result, status, callbackUrl: bookStatusCallbackUrl(req) };
 }
 
 async function readJsonRequestBody(req, maxSize = 64 * 1024) {
@@ -694,7 +694,7 @@ async function handleApi(req, res) {
     sendJson(res, 200, {
       books,
       configured: Boolean(lumitaleWebserviceUrl),
-      callbackUrl: familyCallbackUrl(req),
+      callbackUrl: bookStatusCallbackUrl(req),
       deleteAfterMs: familyBookJobDeleteAfterMs,
       limits: { imageBytes: maximumImageBytes, pdfBytes: maximumPdfBytes }
     });
@@ -942,7 +942,7 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    if (req.method === "POST" && url.pathname === "/api/family-books/status-callback") {
+    if (req.method === "POST" && url.pathname === "/api/books/status-callback") {
       if (!(await auth.requireAdminBearer(req, res))) return;
       const payload = await readJsonRequestBody(req);
       if (!payload.job_id || !payload.status || !payload.visibility) {

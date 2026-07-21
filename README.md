@@ -48,7 +48,7 @@ export LUMITALE_WEBSERVICE_URL="http://localhost:8000"
 Create an administrator API token as described below, then configure LumiTale Web to POST status updates to this callback URL using that token as an HTTP bearer token:
 
 ```text
-https://your-lumitales.example/api/family-books/status-callback
+https://your-lumitales.example/api/books/status-callback
 Authorization: Bearer lumitales_...
 ```
 
