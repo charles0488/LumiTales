@@ -1,0 +1,311 @@
+{
+  "title": "The Tale of Peter Rabbit",
+  "pages": [
+    {
+      "page_number": 0,
+      "content": "This book is titled The Tale of Peter Rabbit by Beatrix Potter. It shows a cartoon-style brown rabbit wearing a blue jacket. He runs joyfully among many colorful carrots and green leaves.",
+      "source_page_number": 0,
+      "image": {
+        "path": "images/page_000.jpg",
+        "filename": "page_000.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_000.mp3",
+        "filename": "page_000.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 1,
+      "content": "Mrs. Rabbit gently reminded her three children that Mr. McGregor's garden was too messy for little bunnies to play in. She warned them strongly about going near the gate, especially because Peter could wander off alone.",
+      "source_page_number": 1,
+      "image": {
+        "path": "images/page_001.jpg",
+        "filename": "page_001.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_001.mp3",
+        "filename": "page_001.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 2,
+      "content": "Next, Flopsy, Mopsy, and Cottontail gather delicious berries from bushes in the meadow. While they pick fruit, Peter Rabbit quickly runs off to play by himself.",
+      "source_page_number": 2,
+      "image": {
+        "path": "images/page_002.jpg",
+        "filename": "page_002.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_002.mp3",
+        "filename": "page_002.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 3,
+      "content": "Soon after, Peter sees a small wooden gate that seems invitingly easy to cross. He eagerly squeezes underneath it, entering the wonderful and bright garden on his own adventure.",
+      "source_page_number": 3,
+      "image": {
+        "path": "images/page_003.jpg",
+        "filename": "page_003.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_003.mp3",
+        "filename": "page_003.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 4,
+      "content": "While wandering, Peter finds many delicious carrots and vibrant red radishes. He quickly eats both tasty vegetables until he feels very full.",
+      "source_page_number": 4,
+      "image": {
+        "path": "images/page_004.jpg",
+        "filename": "page_004.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_004.mp3",
+        "filename": "page_004.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 5,
+      "content": "Suddenly, a booming voice calls out, and Mr. McGregor spots the small rabbit in the garden! The angry farmer begins chasing poor Peter across the patch of bright green weeds.",
+      "source_page_number": 5,
+      "image": {
+        "path": "images/page_005.jpg",
+        "filename": "page_005.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_005.mp3",
+        "filename": "page_005.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 6,
+      "content": "Quickly avoiding the rake, Peter sees a cold watering can near the shed and hides inside it completely. He curls up quietly to try and escape Mr. McGregor's furious reach.",
+      "source_page_number": 6,
+      "image": {
+        "path": "images/page_006.jpg",
+        "filename": "page_006.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_006.mp3",
+        "filename": "page_006.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 7,
+      "content": "Finally escaping the danger, Peter rushes across the green field toward the safety of a wooden gate. As he runs quickly, he realizes his favorite blue jacket is nowhere to be found.",
+      "source_page_number": 7,
+      "image": {
+        "path": "images/page_007.jpg",
+        "filename": "page_007.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_007.mp3",
+        "filename": "page_007.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 8,
+      "content": "Although returning home safely felt wonderful, Peter realized that he was quite unwell that evening. He needed lots of rest and care after his exciting and challenging day.",
+      "source_page_number": 8,
+      "image": {
+        "path": "images/page_008.jpg",
+        "filename": "page_008.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_008.mp3",
+        "filename": "page_008.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    }
+  ],
+  "language_level": 4,
+  "language_level_description": "Ages 6-7: varied vocabulary, clear connectives, and 2-3 moderately detailed sentences per page.",
+  "questions": {
+    "before_reading": {
+      "prompt": {
+        "text": "Before we read, let's think about the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_4/before_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "What color is Peter Rabbit's jacket?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Who told the little bunnies not to play near Mr. McGregors garden?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What fun things do Flopsy, Mopsy, and Cottontail gather in the meadow?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What object might look inviting for Peter to cross?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What delicious treats might Peter find when he wanders alone?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    },
+    "after_reading": {
+      "prompt": {
+        "text": "Great reading! Let's think back on the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_4/after_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "Why did Mr. McGregor begin chasing poor Peter?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What beautiful foods did Peter eat until his tummy felt full?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "How did Peter manage to hide from the angry farmer?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Where was Peter headed right before he realized his jacket was lost?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "How did Peter feel after having such an exciting and challenging day?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    }
+  }
+}

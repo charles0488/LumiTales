@@ -1,0 +1,365 @@
+{
+  "title": "The Tale of Squirrel Nutkin",
+  "pages": [
+    {
+      "page_number": 0,
+      "content": "Welcome friends to the story of Squirrel Nutkin. Beatrix Potter crafted this delightful tale for us all. Here, we meet our charming main character, a spirited little squirrel.",
+      "source_page_number": 0,
+      "image": {
+        "path": "images/page_000.jpg",
+        "filename": "page_000.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_000.mp3",
+        "filename": "page_000.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 1,
+      "content": "Squirrel Nutkin lived contentedly with his dear mamma and three sisters. They built a cozy haven within the sturdy branches of an old tree. This beautiful spot overlooked the clear, gentle waters of the lake.",
+      "source_page_number": 1,
+      "image": {
+        "path": "images/page_001.jpg",
+        "filename": "page_001.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_001.mp3",
+        "filename": "page_001.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 2,
+      "content": "One sunny morning, Nutkin and his entire family began a voyage. They sailed across the tranquil lake in a small little boat. Their grand adventure led them all the way to beautiful Owl Island.",
+      "source_page_number": 2,
+      "image": {
+        "path": "images/page_002.jpg",
+        "filename": "page_002.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_002.mp3",
+        "filename": "page_002.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 3,
+      "content": "Upon arrival at Owl Island, Nutkin's family presented Old Brown Owl with three sweet field mice as a gesture of gratitude. They politely petitioned the wise bird to allow them to gather nuts on his esteemed property. The gift was offered hoping for permission to enjoy the islands bounty.",
+      "source_page_number": 3,
+      "image": {
+        "path": "images/page_003.jpg",
+        "filename": "page_003.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_003.mp3",
+        "filename": "page_003.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 4,
+      "content": "Old Brown Owl graciously accepted their kind offering wholeheartedly. He then permitted them to harvest nuts freely and without worry. His gentle acceptance immediately signaled the beginning of an enjoyable visit for all the squirrels.",
+      "source_page_number": 4,
+      "image": {
+        "path": "images/page_004.jpg",
+        "filename": "page_004.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_004.mp3",
+        "filename": "page_004.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 5,
+      "content": "The other family members worked diligently, gathering various nuts with great effort. But Nutkin remained inactive nearby in the meadow. He proudly claimed that his current unique pursuits were far more important than simple nut gathering.",
+      "source_page_number": 5,
+      "image": {
+        "path": "images/page_005.jpg",
+        "filename": "page_005.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_005.mp3",
+        "filename": "page_005.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 6,
+      "content": "Instead of picking nuts, Nutkin began a playful dance right there on the grass. He also recited tricky riddles to Old Brown Owl throughout the afternoon. Seeing the owl look thoroughly puzzled by his antics brought Nutkin great delight.",
+      "source_page_number": 6,
+      "image": {
+        "path": "images/page_006.jpg",
+        "filename": "page_006.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_006.mp3",
+        "filename": "page_006.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 7,
+      "content": "These following days repeated the same lovely pattern for Nutkin's family. They returned with another sweet gift each time they visited. But continually, Nutkin increased the frequency of his playful teasing directed at Old Brown Owl.",
+      "source_page_number": 7,
+      "image": {
+        "path": "images/page_007.jpg",
+        "filename": "page_007.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_007.mp3",
+        "filename": "page_007.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 8,
+      "content": "Finally, Old Brown Owl warned Nutkin sternly and clearly. He commanded the little squirrel to cease his taunting immediately. The wise owl stated plainly: \"Stop your teasing, or you will truly regret it!\"",
+      "source_page_number": 8,
+      "image": {
+        "path": "images/page_008.jpg",
+        "filename": "page_008.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_008.mp3",
+        "filename": "page_008.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 9,
+      "content": "Even with that explicit warning, poor Nutkin remained stubbornly defiant in his spirit. He teased Old Brown Owl one last time and laughed! Suddenlywhoosh!Old Brown Owl moved quickly and caught him firmly in his powerful claws!",
+      "source_page_number": 9,
+      "image": {
+        "path": "images/page_009.jpg",
+        "filename": "page_009.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_009.mp3",
+        "filename": "page_009.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 10,
+      "content": "Nutkin struggled tremendously, wriggling wildly as he desperately tried to escape the large bird's fierce grasp. Although Nutkin finally managed a scramble away, alas, he left most of his beautiful tail trapped within Old Brown Owls strong claws.",
+      "source_page_number": 10,
+      "image": {
+        "path": "images/page_010.jpg",
+        "filename": "page_010.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_010.mp3",
+        "filename": "page_010.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 11,
+      "content": "That day, Nutkin returned home in deep silence and thoughtful reflection. He had absorbed a truly valuable lesson: demonstrating genuine kindness and politeness is invariably the most wonderful way to live life.",
+      "source_page_number": 11,
+      "image": {
+        "path": "images/page_011.jpg",
+        "filename": "page_011.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_011.mp3",
+        "filename": "page_011.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    }
+  ],
+  "language_level": 5,
+  "language_level_description": "Advanced age 8: precise, expressive vocabulary and 2-4 richer sentences, while remaining child-friendly.",
+  "questions": {
+    "before_reading": {
+      "prompt": {
+        "text": "Before we read, let's think about the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_5/before_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "What natural elements do you observe in this beautiful and peaceful scene?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "How many members of the squirrel family are preparing for their river journey?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Do you think traveling on a small boat across a lake might bring them into trouble or adventure?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Looking at that island, what kind of amazing secret or discovery do you predict they will find there?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "If the squirrels are going to meet an animal, what thoughtful gifts could they possibly bring?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    },
+    "after_reading": {
+      "prompt": {
+        "text": "Great reading! Let's think back on the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_5/after_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "Why did Nutkin's family initially visit Old Brown Owl and share their sweet gift?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "How was Nutkins behavior different from his hardworking sisters while gathering nuts?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What strong warning did the wise owl issue to the little squirrel about his teasing?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What happened when Nutkin refused to listen, and where did he end up getting caught?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "By the very end of the story, what important lesson does Squirrel Nutkin realize about a happy life?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    }
+  }
+}

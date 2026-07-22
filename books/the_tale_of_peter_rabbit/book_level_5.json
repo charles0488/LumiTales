@@ -1,0 +1,311 @@
+{
+  "title": "The Tale of Peter Rabbit",
+  "pages": [
+    {
+      "page_number": 0,
+      "content": "The picture book is titled The Tale of Peter Rabbit by Beatrix Potter. It features a brown rabbit, Peter, joyfully running in his blue jacket. He explores fields filled with sweet carrots and fresh greenery.",
+      "source_page_number": 0,
+      "image": {
+        "path": "images/page_000.jpg",
+        "filename": "page_000.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_000.mp3",
+        "filename": "page_000.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 1,
+      "content": "Mrs. Rabbit carefully instructs her children not to venture into Mr. McGregor's garden. She warns them about the dangers lurking beyond their safe family home.",
+      "source_page_number": 1,
+      "image": {
+        "path": "images/page_001.jpg",
+        "filename": "page_001.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_001.mp3",
+        "filename": "page_001.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 2,
+      "content": "Flopsy, Mopsy, and Cottontail carefully gathered berries from the bushes. However, Peter began to wander away from his sisters. Peter felt a strong urge for exciting adventure beyond their safe location.",
+      "source_page_number": 2,
+      "image": {
+        "path": "images/page_002.jpg",
+        "filename": "page_002.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_002.mp3",
+        "filename": "page_002.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 3,
+      "content": "Peter quickly squeezed under a low wooden gate. He stepped beyond the family boundary into the wonderful garden area. The rich and unknown space immediately captivated him.",
+      "source_page_number": 3,
+      "image": {
+        "path": "images/page_003.jpg",
+        "filename": "page_003.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_003.mp3",
+        "filename": "page_003.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 4,
+      "content": "Peter searched for marvelous treasures and quickly found sweet roots. He began nibbling crunchy radishes and fresh carrots. Peter realized these garden vegetables were truly delightful!",
+      "source_page_number": 4,
+      "image": {
+        "path": "images/page_004.jpg",
+        "filename": "page_004.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_004.mp3",
+        "filename": "page_004.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 5,
+      "content": "Suddenly, a figure appeared: it was Mr. McGregor! He spotted Peter Rabbit right away. The furious farmer immediately began pursuing him throughout the whole garden yard.",
+      "source_page_number": 5,
+      "image": {
+        "path": "images/page_005.jpg",
+        "filename": "page_005.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_005.mp3",
+        "filename": "page_005.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 6,
+      "content": "Peter knew he needed cover from Mr. McGregor's pursuit. He quickly concealed himself inside a chilly watering can by the shed. Peter waited there, desperately trying to escape the angry chaser nearby.",
+      "source_page_number": 6,
+      "image": {
+        "path": "images/page_006.jpg",
+        "filename": "page_006.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_006.mp3",
+        "filename": "page_006.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 7,
+      "content": "Peter realized he must escape his pursuer to find freedom. He quickly raced across the expansive field toward the wooden gate. However, running such a considerable distance caused Peter to lose his beloved blue jacket somewhere along the way.",
+      "source_page_number": 7,
+      "image": {
+        "path": "images/page_007.jpg",
+        "filename": "page_007.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_007.mp3",
+        "filename": "page_007.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 8,
+      "content": "Finally, Peter managed to navigate home and rested in his cozy bed. Although resting in this warm place was wonderful for his tired body, he awoke later that evening feeling quite unwell. The great adventure had taken its toll on him.",
+      "source_page_number": 8,
+      "image": {
+        "path": "images/page_008.jpg",
+        "filename": "page_008.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_5/page_008.mp3",
+        "filename": "page_008.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    }
+  ],
+  "language_level": 5,
+  "language_level_description": "Advanced age 8: precise, expressive vocabulary and 2-4 richer sentences, while remaining child-friendly.",
+  "questions": {
+    "before_reading": {
+      "prompt": {
+        "text": "Before we read, let's think about the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_5/before_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "What colors are Peter's blue jacket and the fields where he likes to explore?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Why do Mrs. Rabbit and her children need to listen so carefully about Mr. McGregor's garden?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Look at the bushes, what types of sweet berries might Flopsy and Mopsy gather for a treat?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "If Peter wanders away from his sisters past the wooden gate, where could he potentially go?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Do you think there are any marvelous hidden roots or crunchy vegetables inside that big unknown garden area?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/before_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    },
+    "after_reading": {
+      "prompt": {
+        "text": "Great reading! Let's think back on the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_5/after_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "When Peter finally found roots, what delightful snacks did he nibble in the garden?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Who suddenly appeared and spotted Peter, causing him to feel scared right away?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "To avoid being caught, where did poor Peter hide himself from Mr. McGregor's angry search?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What important item did Peter lose after running such a long distance across the wide field?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Even though his bed was warm, how did Peter feel when he finally awoke because of his great adventure?",
+          "audio": {
+            "path": "voices_of_questions/book_level_5/after_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    }
+  }
+}

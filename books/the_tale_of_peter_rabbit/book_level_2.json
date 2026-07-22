@@ -1,0 +1,311 @@
+{
+  "title": "The Tale of Peter Rabbit",
+  "pages": [
+    {
+      "page_number": 0,
+      "content": "This is The Tale of Peter Rabbit. A brown rabbit wears a blue jacket. He runs by the tasty carrots.",
+      "source_page_number": 0,
+      "image": {
+        "path": "images/page_000.jpg",
+        "filename": "page_000.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_2/page_000.mp3",
+        "filename": "page_000.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 1,
+      "content": "Mrs. Rabbit said to her children, Stay safe! Do not go near Mr. McGregors garden.",
+      "source_page_number": 1,
+      "image": {
+        "path": "images/page_001.jpg",
+        "filename": "page_001.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_2/page_001.mp3",
+        "filename": "page_001.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 2,
+      "content": "Flopsy, Mopsy, and Cottontail pick berries on the grass. Peter starts to run away from them.",
+      "source_page_number": 2,
+      "image": {
+        "path": "images/page_002.jpg",
+        "filename": "page_002.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_2/page_002.mp3",
+        "filename": "page_002.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 3,
+      "content": "Peter runs under a wooden gate. He enters the wonderful green garden.",
+      "source_page_number": 3,
+      "image": {
+        "path": "images/page_003.jpg",
+        "filename": "page_003.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_2/page_003.mp3",
+        "filename": "page_003.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 4,
+      "content": "Peter eats carrots and radishes. They are very tasty for him!",
+      "source_page_number": 4,
+      "image": {
+        "path": "images/page_004.jpg",
+        "filename": "page_004.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_2/page_004.mp3",
+        "filename": "page_004.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 5,
+      "content": "Mr. McGregor saw Peter! He started running fast with his rake to catch him.",
+      "source_page_number": 5,
+      "image": {
+        "path": "images/page_005.jpg",
+        "filename": "page_005.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_2/page_005.mp3",
+        "filename": "page_005.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 6,
+      "content": "To stay safe, Peter hid inside a cool watering can. He waited until Mr. McGregor was gone.",
+      "source_page_number": 6,
+      "image": {
+        "path": "images/page_006.jpg",
+        "filename": "page_006.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_2/page_006.mp3",
+        "filename": "page_006.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 7,
+      "content": "He runs away for the gate, losing his lovely blue jacket. Poor Peter is running fast.",
+      "source_page_number": 7,
+      "image": {
+        "path": "images/page_007.jpg",
+        "filename": "page_007.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_2/page_007.mp3",
+        "filename": "page_007.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 8,
+      "content": "Peter finally gets home safely. But he feels very unwell that night.",
+      "source_page_number": 8,
+      "image": {
+        "path": "images/page_008.jpg",
+        "filename": "page_008.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_2/page_008.mp3",
+        "filename": "page_008.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    }
+  ],
+  "language_level": 2,
+  "language_level_description": "Ages 3-4: common everyday words and 1-2 short, direct sentences per page.",
+  "questions": {
+    "before_reading": {
+      "prompt": {
+        "text": "Before we read, let's think about the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_2/before_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "Who is the little brown rabbit?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/before_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What color jacket does Peter wear?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/before_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Where does Mrs. Rabbit tell them not to go?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/before_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Do Peter and his siblings pick berries or carrots?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/before_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Will the green garden have tasty food?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/before_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    },
+    "after_reading": {
+      "prompt": {
+        "text": "Great reading! Let's think back on the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_2/after_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "What warning did Mrs. Rabbit give her children?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/after_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Who spotted Peter in the wonderful garden?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/after_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Where did Peter hide when he needed to be safe?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/after_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What important item did Peter lose while running?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/after_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "How did Peter feel after going home that night?",
+          "audio": {
+            "path": "voices_of_questions/book_level_2/after_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    }
+  }
+}

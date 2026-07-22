@@ -1,0 +1,365 @@
+{
+  "title": "The Tale of Squirrel Nutkin",
+  "pages": [
+    {
+      "page_number": 0,
+      "content": "This book tells the story of a bright squirrel named Nutkin. He is featured in this lovely tale written by Beatrix Potter. Get ready to learn about his adventures!",
+      "source_page_number": 0,
+      "image": {
+        "path": "images/page_000.jpg",
+        "filename": "page_000.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_000.mp3",
+        "filename": "page_000.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 1,
+      "content": "Nutkin lived happily with his mama and three little sisters near a peaceful lake. They made their home high up in the branches of a big tree. Here he was waving from a branch while others peeked out.",
+      "source_page_number": 1,
+      "image": {
+        "path": "images/page_001.jpg",
+        "filename": "page_001.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_001.mp3",
+        "filename": "page_001.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 2,
+      "content": "One day, Nutkin's entire family sailed across the calm blue water. They journeyed to a place called Owl Island in a little leaf-shaped boat. The whole family looked happy as they began their big adventure.",
+      "source_page_number": 2,
+      "image": {
+        "path": "images/page_002.jpg",
+        "filename": "page_002.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_002.mp3",
+        "filename": "page_002.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 3,
+      "content": "When they arrived at the island, they gave Old Brown Owl three field mice as a gift. They also asked if they could gather enough nuts from his special land. The owl seemed to listen carefully to their friendly request.",
+      "source_page_number": 3,
+      "image": {
+        "path": "images/page_003.jpg",
+        "filename": "page_003.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_003.mp3",
+        "filename": "page_003.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 4,
+      "content": "Old Brown Owl accepted their kind gift and smiled gently. He kindly allowed the family to begin gathering many delicious nuts on his island. Everyone felt happy because of this wonderful permission.",
+      "source_page_number": 4,
+      "image": {
+        "path": "images/page_004.jpg",
+        "filename": "page_004.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_004.mp3",
+        "filename": "page_004.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 5,
+      "content": "Most of the squirrels worked very hard every day collecting crunchy nuts in the forest. However, Nutkin was different; he claimed he had much more important things to do! He did not help collect anything.",
+      "source_page_number": 5,
+      "image": {
+        "path": "images/page_005.jpg",
+        "filename": "page_005.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_005.mp3",
+        "filename": "page_005.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 6,
+      "content": "Knowing this, Nutkin decided to dance and tell silly riddles to Old Brown Owl. Because of his playfulness, he thought it was very funny to see the owl look so puzzled!",
+      "source_page_number": 6,
+      "image": {
+        "path": "images/page_006.jpg",
+        "filename": "page_006.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_006.mp3",
+        "filename": "page_006.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 7,
+      "content": "Over several days, the squirrels returned with gifts for their friend. Yet, each single day passed, Nutkin found new ways to tease Old Brown more and more. His teasing grew bigger every time.",
+      "source_page_number": 7,
+      "image": {
+        "path": "images/page_007.jpg",
+        "filename": "page_007.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_007.mp3",
+        "filename": "page_007.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 8,
+      "content": "Finally, Old Brown Owl spoke loudly, warning Nutkin to stop his pranks immediately. He warned him: \"Stop your teasing, or you will be sorry!\" Nutkin must have looked very surprised by the stern tone.",
+      "source_page_number": 8,
+      "image": {
+        "path": "images/page_008.jpg",
+        "filename": "page_008.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_008.mp3",
+        "filename": "page_008.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 9,
+      "content": "Although Old Brown Owl had given a serious warning, Nutkin would not stop playing games. Because he was still so mischievous, Nutkin teased him one last time. Suddenly, whoosh! Old Brown caught the squirrel swiftly in his powerful claws.",
+      "source_page_number": 9,
+      "image": {
+        "path": "images/page_009.jpg",
+        "filename": "page_009.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_009.mp3",
+        "filename": "page_009.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 10,
+      "content": "Nutkin quickly wriggled and kicked with all his might to get away from the owl's grasp. But even though he struggled fiercely, he sadly left most of his beautiful tail trapped in the owl's sharp claws.",
+      "source_page_number": 10,
+      "image": {
+        "path": "images/page_010.jpg",
+        "filename": "page_010.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_010.mp3",
+        "filename": "page_010.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    },
+    {
+      "page_number": 11,
+      "content": "The next day, Nutkin walked quietly back home to his family. He understood that being kind and polite is always much better than teasing. He had learned a truly valuable lesson that day.",
+      "source_page_number": 11,
+      "image": {
+        "path": "images/page_011.jpg",
+        "filename": "page_011.jpg",
+        "content_type": "image/jpeg"
+      },
+      "audio": {
+        "path": "voices/book_level_4/page_011.mp3",
+        "filename": "page_011.mp3",
+        "content_type": "audio/mpeg",
+        "provider": "kokoro",
+        "language": "en",
+        "model": "hexgrad/Kokoro-82M"
+      }
+    }
+  ],
+  "language_level": 4,
+  "language_level_description": "Ages 6-7: varied vocabulary, clear connectives, and 2-3 moderately detailed sentences per page.",
+  "questions": {
+    "before_reading": {
+      "prompt": {
+        "text": "Before we read, let's think about the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_4/before_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "Where do you think Nutkin and his family live?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What might they look for on their big adventure?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "How did the squirrel family plan to travel across the water?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "Who is Old Brown Owl, and what kind of gifts might he receive?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "If they want nuts, what must they ask permission for?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/before_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    },
+    "after_reading": {
+      "prompt": {
+        "text": "Great reading! Let's think back on the story with a few fun questions!",
+        "audio": {
+          "path": "voices_of_questions/book_level_4/after_reading/prompt.mp3",
+          "filename": "prompt.mp3",
+          "content_type": "audio/mpeg",
+          "provider": "kokoro",
+          "language": "en",
+          "model": "hexgrad/Kokoro-82M"
+        }
+      },
+      "questions": [
+        {
+          "text": "Why was Nutkin teasing Old Brown Owl instead of working?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_000.mp3",
+            "filename": "question_000.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What sound or action signaled that Old Brown Owl was angry?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_001.mp3",
+            "filename": "question_001.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "How did the owl finally catch little Nutkin?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_002.mp3",
+            "filename": "question_002.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What part of his beautiful tail did Nutkin lose?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_003.mp3",
+            "filename": "question_003.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        },
+        {
+          "text": "What valuable lesson did Nutkin learn at the end?",
+          "audio": {
+            "path": "voices_of_questions/book_level_4/after_reading/question_004.mp3",
+            "filename": "question_004.mp3",
+            "content_type": "audio/mpeg",
+            "provider": "kokoro",
+            "language": "en",
+            "model": "hexgrad/Kokoro-82M"
+          }
+        }
+      ]
+    }
+  }
+}
