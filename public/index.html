@@ -116,13 +116,13 @@
           </nav>
           <div id="familyPromptPanel" class="family-tab-panel" role="tabpanel" aria-labelledby="familyPromptTab">
             <form action="/api/books/from-prompt" method="post">
-              <label>Creative brief<textarea name="prompt" required placeholder="A shy moon moth learns to ask for help..."></textarea></label>
+              <label>Creative brief<textarea name="prompt" required placeholder="e.g., A shy moon moth learns to ask for help..."></textarea></label>
               <button type="submit">Submit prompt</button><output></output>
             </form>
           </div>
           <div id="familyImagesPanel" class="family-tab-panel" role="tabpanel" aria-labelledby="familyImagesTab" hidden>
             <form action="/api/books/from-images" method="post" enctype="multipart/form-data">
-              <label>Book title<input name="title" required></label>
+              <label>Identify your book<input name="title" required placeholder="e.g., Maya's Adventure at the Zoo"></label>
               <label>Page images<input name="images" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple required data-maximum-bytes="1000000" data-maximum-mb="1"></label>
               <p class="family-form-hint">PNG or JPG, each under 1 MB. Selected order becomes page order.</p>
               <button type="submit">Submit images</button><output></output>

@@ -306,6 +306,7 @@ export function createLibraryStore({ baseDir }) {
       await run(`begin immediate;
         delete from book_checkouts where book_id = ${sqlValue(bookId)};
         delete from book_orders where book_id = ${sqlValue(bookId)};
+        delete from family_book_jobs where book_id = ${sqlValue(bookId)};
         commit;`);
     });
   }

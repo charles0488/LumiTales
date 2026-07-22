@@ -326,7 +326,13 @@ async function loadFamilyBooks() {
     elements.addPublicBookButton.disabled = !payload.configured;
     elements.addFamilyBookButton.title = payload.configured ? "Create a family book" : "LumiTale Web is not configured";
     renderFamilyBooks();
-    if ([...familyBooks, ...publicBookJobs].some((item) => item.status === "accepted" || item.status === "working")) {
+    const hasActiveJob = [...familyBooks, ...publicBookJobs]
+      .some((item) => item.status === "accepted" || item.status === "working");
+    const isWaitingForFamilyBook = familyBooks
+      .some((item) => item.status === "succeeded" && item.bookId);
+    if (isWaitingForFamilyBook) {
+      familyStatusTimer = window.setTimeout(() => loadLibrary(), 3000);
+    } else if (hasActiveJob) {
       familyStatusTimer = window.setTimeout(loadFamilyBooks, 3000);
     }
   } catch (error) {
