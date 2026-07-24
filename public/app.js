@@ -182,7 +182,7 @@ function createLibraryCard(item) {
     const actions = document.createElement("div");
     actions.className = "library-card-actions";
     actions.append(action);
-    if (currentUser?.role === "admin") {
+    if (currentUser?.role === "admin" || item.owned) {
       const deleteAction = document.createElement("button");
       deleteAction.type = "button";
       deleteAction.className = "delete-book-button";
@@ -202,7 +202,8 @@ function renderLibrary() {
 }
 
 async function deleteLibraryBook(item) {
-  if (!window.confirm(`Delete “${item.title}” for every user? This cannot be undone.`)) return;
+  const scope = item.owned ? "from your Family Library" : "for every user";
+  if (!window.confirm(`Delete “${item.title}” ${scope}? This cannot be undone.`)) return;
   elements.libraryStatus.textContent = `Deleting ${item.title}…`;
   const response = await fetch(`/api/library/${encodeURIComponent(item.id)}`, {
     method: "DELETE",

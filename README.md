@@ -82,6 +82,8 @@ Shared accounts open in Kid Reading mode after every login or refresh. The first
 
 While Parent mode is unlocked, the Profile menu can change the parent PIN. The reset endpoint verifies the current PIN before replacing its salted hash.
 
+Parents can permanently delete books owned by their family from Family Library while Parent mode is unlocked. Administrators can also delete Public Library books. Deletion requires the parent PIN, and parents cannot delete another family's books or public books.
+
 If the PIN is forgotten, **Forgot PIN?** on the Parents Only gate verifies the local account password before accepting a new PIN. Five failed password attempts lock recovery for five minutes.
 
 By default, confirmation and password reset emails are printed to the server console for local development. For real delivery, configure Resend or SMTP.

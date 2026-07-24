@@ -834,9 +834,12 @@ async function handleApi(req, res) {
 
   const libraryBookMatch = url.pathname.match(/^\/api\/library\/([^/?#]+)$/);
   if (req.method === "DELETE" && libraryBookMatch) {
-    if (!(await auth.requireAdmin(req, res))) return true;
-    await verifyParentPinWithLimit(req.user.id, req.headers["x-parent-pin"]);
+    await requireParentPin(req);
     const bookId = libraryBookMatch[1];
+    const ownedBookIds = await library.ownedBookIds(req.user.id);
+    if (req.user.role !== "admin" && !ownedBookIds.includes(bookId)) {
+      throw httpError(403, "Parents may only delete books from their own Family Library.");
+    }
     await deleteBook(bookId);
     logger.info("Book deleted", { requestId: req.id, bookId, userId: req.user.id });
     sendJson(res, 200, { ok: true, id: bookId });
